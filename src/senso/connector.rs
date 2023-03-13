@@ -105,4 +105,24 @@ impl Connector {
 
         Ok(())
     }
+
+    pub fn live_report(&self) -> Result<()> {
+        if !self.login {
+            bail!("Please login first.");
+        };
+
+        let resp = self
+            .default_header(self.agent.get(&urls::LIVE_REPORT(&self.serial)))
+            .call()?;
+
+        // only convert to JSON if Code 200
+        let resp_json: serde_json::Value = match resp.status() {
+            200 => resp.into_json()?,
+            c => bail!("Cannot get system_status | status code: {}", c),
+        };
+
+        println!("{}", serde_json::to_string_pretty(&resp_json)?);
+
+        Ok(())
+    }
 }

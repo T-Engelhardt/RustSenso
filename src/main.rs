@@ -22,4 +22,5 @@ fn main() {
     c.login("T.Engelhardt", "vZW5Sz4Xmj#I").unwrap();
     // TODO macro?? try x time before giving up
     c.system_status().unwrap();
+    c.live_report().unwrap();
 }
