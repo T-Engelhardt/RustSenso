@@ -18,6 +18,8 @@ fn main() {
         )
     );
     */
-    let c = Connector::new("".into());
-    c.unwrap().login("T.Engelhardt", "vZW5Sz4Xmj#I").unwrap();
+    let mut c = Connector::new("21223900202609620938071939N6".into()).unwrap();
+    c.login("T.Engelhardt", "vZW5Sz4Xmj#I").unwrap();
+    // TODO macro?? try x time before giving up
+    c.system_status().unwrap();
 }

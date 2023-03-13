@@ -11,9 +11,15 @@ default = ["local_url"]
 # use localhost instead of remote
 local_url = []
 
+[lib]
+name = "senso"
+path = "src/senso/mod.rs"
+
 [dependencies]
 anyhow = "1.0.69"
 const_format = "0.2.30"
-cookie_store = "0.19.0"
 serde_json = "1.0.94"
 ureq = { version="2.6.2", features = ["default", "cookies", "json"]}
+
+[dev-dependencies]
+mockito = "1.0.0"
