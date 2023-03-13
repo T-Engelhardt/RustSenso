@@ -4,7 +4,16 @@ version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+# no features by default
+default = ["local_url"]
+
+# use localhost instead of remote
+local_url = []
 
 [dependencies]
+anyhow = "1.0.69"
 const_format = "0.2.30"
+cookie_store = "0.19.0"
+serde_json = "1.0.94"
 ureq = { version="2.6.2", features = ["default", "cookies", "json"]}

@@ -1,2 +1,2 @@
-pub mod senso;
+pub mod connector;
 pub mod urls;
