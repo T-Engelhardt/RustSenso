@@ -14,12 +14,17 @@ use super::urls;
 
 const SMARTPHONE_ID: &str = "rustSenso";
 
+#[cfg(feature = "test_token")]
+const PATH_TOKEN: &str = "token_test";
+#[cfg(not(feature = "test_token"))]
+const PATH_TOKEN: &str = "token";
+
 #[derive(Error, Debug)]
 pub enum ApiError {
     #[error("Token Outdated")]
     TokenOutdated,
     #[error("resource State is Outdated")]
-    StateOutdated
+    StateOutdated,
 }
 
 pub struct Connector {
@@ -46,16 +51,11 @@ impl Connector {
     }
 
     fn token_save_disk(&self, token: &str) {
-        #[cfg(feature = "test_token")]
-        let path = "token_test";
-        #[cfg(not(feature = "test_token"))]
-        let path = "token";
-
         let mut file = match std::fs::OpenOptions::new()
             .write(true)
             .truncate(true)
             .create(true)
-            .open(path)
+            .open(PATH_TOKEN)
         {
             Ok(f) => f,
             Err(e) => {
@@ -72,12 +72,7 @@ impl Connector {
     }
 
     fn token_from_disk(&self) -> Result<String> {
-        #[cfg(feature = "test_token")]
-        let path = "token_test";
-        #[cfg(not(feature = "test_token"))]
-        let path = "token";
-
-        let mut file = std::fs::OpenOptions::new().read(true).open(path)?;
+        let mut file = std::fs::OpenOptions::new().read(true).open(PATH_TOKEN)?;
         let mut buf = String::new();
         file.read_to_string(&mut buf)?;
         debug!("Read token: \"{}\" from disk", &buf);
@@ -91,7 +86,7 @@ impl Connector {
         // force new token from api
         if force {
             debug!("Force new token.");
-            let _ = fs::remove_file("token");
+            let _ = fs::remove_file(PATH_TOKEN);
             return self.token_api(user, pwd);
         }
         // token not found on disk
@@ -165,7 +160,7 @@ impl Connector {
                     token = self.token(user, pwd, true)?;
                     self.authenticate(user, &token)?;
                 }
-                _ => bail!(e)
+                _ => bail!(e),
             }
         }
         info!("Successfully logged in");
