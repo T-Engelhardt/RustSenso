@@ -4,6 +4,8 @@ extern crate senso;
 
 #[test]
 fn login_test() {
+    let _ = env_logger::builder().is_test(true).try_init();
+
     let mut server = mockito::Server::new_with_port(8080);
 
     let token_mock = server
@@ -24,7 +26,14 @@ fn login_test() {
         )
         .create();
 
-    let auth_mock = server
+    // error on first request
+    let auth_mock_401 = server
+        .mock("POST", "/account/authentication/v1/authenticate")
+        .with_status(401)
+        .create();
+
+    // retry is ok
+    let auth_mock_valid = server
         .mock("POST", "/account/authentication/v1/authenticate")
         .with_status(200)
         .create();
@@ -32,6 +41,7 @@ fn login_test() {
     let mut c = senso::connector::Connector::new("".into()).unwrap();
     c.login("u", "p").unwrap();
 
-    token_mock.assert();
-    auth_mock.assert();
+    token_mock.expect_at_most(2).assert();
+    auth_mock_401.assert();
+    auth_mock_valid.assert();
 }

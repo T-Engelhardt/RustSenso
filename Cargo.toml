@@ -6,10 +6,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [features]
 # no features by default
-default = ["local_url"]
+default = ["local_url", "test_token"]
 
 # use localhost instead of remote
 local_url = []
+
+# use test token file
+test_token = []
 
 [lib]
 name = "senso"
@@ -18,7 +21,10 @@ path = "src/senso/mod.rs"
 [dependencies]
 anyhow = "1.0.69"
 const_format = "0.2.30"
+env_logger = "0.10.0"
+log = "0.4.17"
 serde_json = "1.0.94"
+thiserror = "1.0.39"
 ureq = { version="2.6.2", features = ["default", "cookies", "json"]}
 
 [dev-dependencies]
