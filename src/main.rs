@@ -9,6 +9,14 @@ fn main() {
     c.login("T.Engelhardt", "vZW5Sz4Xmj#I").unwrap();
 
     // TODO macro?? try x time before giving up
-    c.system_status().unwrap();
-    c.live_report().unwrap();
+    let status = c.system_status().unwrap();
+    println!(
+        "{:?}\n Outside Temp: {}",
+        status, status.body.outside_temperature
+    );
+    println!(
+        "Meta Timestamp: {}",
+        status.meta.resource_state[0].timestamp.naive_local()
+    );
+    //c.live_report().unwrap();
 }

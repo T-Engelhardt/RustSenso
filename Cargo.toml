@@ -24,8 +24,12 @@ const_format = "0.2.30"
 env_logger = "0.10.0"
 log = "0.4.17"
 serde_json = "1.0.94"
+serde = { version = "1.0", features = ["default", "derive"] }
 thiserror = "1.0.39"
 ureq = { version="2.6.2", features = ["default", "cookies", "json"]}
+chrono = {version = "0.4.24", features = ["default", "serde"] }
+iso8601-timestamp = "0.2.10"
+serde_with = {version= "2.3.1", features = ["default", "chrono"] }
 
 [dev-dependencies]
 mockito = "1.0.0"

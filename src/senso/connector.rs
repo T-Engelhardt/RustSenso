@@ -10,7 +10,7 @@ use thiserror::Error;
 
 use ureq::{Agent, AgentBuilder, Request};
 
-use super::urls;
+use super::{response, urls};
 
 const SMARTPHONE_ID: &str = "rustSenso";
 
@@ -107,12 +107,9 @@ impl Connector {
                 "password": pwd,
             }))?;
 
-        let resp_json: serde_json::Value = resp.into_json()?;
+        let resp_token: response::token::Root = resp.into_json()?;
 
-        match resp_json["body"]["authToken"].as_str() {
-            Some(auth_token) => Ok(auth_token.into()),
-            None => bail!("Can't convert/find Json field authToken"),
-        }
+        Ok(resp_token.body.auth_token)
     }
 
     fn authenticate(&self, user: &str, token: &str) -> Result<()> {
@@ -168,16 +165,12 @@ impl Connector {
         Ok(())
     }
 
-    pub fn system_status(&self) -> Result<()> {
+    pub fn system_status(&self) -> Result<response::status::Root> {
         let resp = self
             .default_header(self.agent.get(&urls::SYSTEM_STATUS(&self.serial)))
             .call()?;
 
-        let resp_json: serde_json::Value = resp.into_json()?;
-
-        println!("{}", serde_json::to_string_pretty(&resp_json)?);
-
-        Ok(())
+        Ok(resp.into_json()?)
     }
 
     pub fn live_report(&self) -> Result<()> {

@@ -1,3 +1,4 @@
+use iso8601_timestamp::Timestamp;
 use serde_json::json;
 
 extern crate senso;
@@ -38,10 +39,52 @@ fn login_test() {
         .with_status(200)
         .create();
 
-    let mut c = senso::connector::Connector::new("".into()).unwrap();
+    let status_mock = server
+        .mock("GET", "/facilities/1/systemcontrol/tli/v1/status")
+        .with_body(
+            json!({
+                "body": {
+                  "datetime": "2023-03-14T13:40:24.000Z",
+                  "outside_temperature": 4.2
+                },
+                "meta": {
+                  "resourceState": [
+                    {
+                      "link": {
+                        "rel": "self",
+                        "resourceLink": "/facilities/21223900202609620938071939N6/systemcontrol/tli/v1/status"
+                      },
+                      "state": "OUTDATED",
+                      "timestamp": 1624441392223_i64
+                    }
+                  ]
+                }
+              })
+            .to_string(),
+        )
+        .create();
+
+    let mut c = senso::connector::Connector::new("1".into()).unwrap();
     c.login("u", "p").unwrap();
+    let status = c.system_status().unwrap();
+
+    // convert to unixtimestamp
+    assert_eq!(
+        1678801224,
+        status
+            .body
+            .datetime
+            .duration_since(Timestamp::UNIX_EPOCH)
+            .whole_seconds()
+    );
+
+    assert_eq!(
+        1624441392_i64,
+        status.meta.resource_state[0].timestamp.timestamp()
+    );
 
     token_mock.expect_at_most(2).assert();
     auth_mock_401.assert();
     auth_mock_valid.assert();
+    status_mock.assert();
 }
