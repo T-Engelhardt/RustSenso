@@ -18,6 +18,8 @@ const SMARTPHONE_ID: &str = "rustSenso";
 pub enum ApiError {
     #[error("Token Outdated")]
     TokenOutdated,
+    #[error("resource State is Outdated")]
+    StateOutdated
 }
 
 pub struct Connector {
@@ -163,7 +165,7 @@ impl Connector {
                     token = self.token(user, pwd, true)?;
                     self.authenticate(user, &token)?;
                 }
-                None => bail!(e),
+                _ => bail!(e)
             }
         }
         info!("Successfully logged in");
