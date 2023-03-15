@@ -33,7 +33,7 @@ pub struct Connector {
 }
 
 impl Connector {
-    pub fn new(serial: String) -> Result<Connector> {
+    pub fn new(serial: String) ->Connector {
         let enforce_https = !cfg!(feature = "local_url");
 
         let agent = AgentBuilder::new()
@@ -41,7 +41,7 @@ impl Connector {
             .timeout_write(Duration::from_secs(5))
             .https_only(enforce_https)
             .build();
-        Ok(Connector { agent, serial })
+        Connector { agent, serial }
     }
 
     fn default_header(&self, req: Request) -> Request {
@@ -147,7 +147,7 @@ impl Connector {
 
 // PUBLIC INTERFACE //
 impl Connector {
-    pub fn login(&mut self, user: &str, pwd: &str) -> Result<()> {
+    pub fn login(&self, user: &str, pwd: &str) -> Result<()> {
         info!("Logging in as {}", user);
         let mut token = self.token(user, pwd, false)?;
         if let Err(e) = self.authenticate(user, &token) {

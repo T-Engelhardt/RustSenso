@@ -1,6 +1,5 @@
-use crate::senso::connector::Connector;
-
-mod senso;
+use log::warn;
+use senso::connector::Connector;
 
 fn main() {
     env_logger::init();
@@ -14,4 +13,5 @@ fn main() {
 
     let live_report = c.live_report().unwrap();
     println!("{:#?}", live_report);
+
 }

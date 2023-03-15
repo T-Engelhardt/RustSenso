@@ -56,7 +56,7 @@ fn login_test() {
         .with_status(200)
         .create();
 
-    let mut c = senso::connector::Connector::new("1".into()).unwrap();
+    let mut c = senso::connector::Connector::new("1".into());
     c.login("u", "p").unwrap();
 
     // get first token from api/disk fail auth and retry
@@ -68,7 +68,7 @@ fn login_test() {
 #[test]
 fn status_test() {
     let server = init();
-    let c = senso::connector::Connector::new("1".into()).unwrap();
+    let c = senso::connector::Connector::new("1".into());
 
     // STATUS MOCK 1
 
@@ -179,7 +179,7 @@ fn status_test() {
 #[test]
 fn live_report_test() {
     let server = init();
-    let c = senso::connector::Connector::new("1".into()).unwrap();
+    let c = senso::connector::Connector::new("1".into());
 
     let live_report_mock = server
         .mock("GET", "/facilities/1/livereport/v1")

@@ -18,6 +18,11 @@ test_token = []
 name = "senso"
 path = "src/senso/mod.rs"
 
+[[bin]]
+name = "sensor"
+path = "src/sensor/bin/main.rs"
+required-features = []
+
 [dependencies]
 anyhow = "1.0.69"
 const_format = "0.2.30"
