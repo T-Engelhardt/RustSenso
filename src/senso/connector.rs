@@ -60,22 +60,23 @@ impl Connector {
             Ok(f) => f,
             Err(e) => {
                 // print Error but don't propagate Error
-                warn!("Could open/create File. Err: {}", e.to_string());
+                warn!("Could open/create File. Err: \"{}\".", e.to_string());
                 return;
             }
         };
 
         if let Err(e) = file.write_all(token.as_bytes()) {
-            warn!("Could write token to file. Err: {}", e.to_string())
+            warn!("Could write token to file. Err: \"{}\".", e.to_string())
         }
-        debug!("Saved token: \"{}\" to disk", &token);
+        debug!("Saved token: \"{}\" to disk.", &token);
     }
 
     fn token_from_disk(&self) -> Result<String> {
         let mut file = std::fs::OpenOptions::new().read(true).open(PATH_TOKEN)?;
         let mut buf = String::new();
         file.read_to_string(&mut buf)?;
-        debug!("Read token: \"{}\" from disk", &buf);
+        info!("Successfully read token from disk.");
+        debug!("Read token: \"{}\" from disk.", &buf);
         Ok(buf)
     }
 
@@ -98,7 +99,7 @@ impl Connector {
     }
 
     fn token_api(&self, user: &str, pwd: &str) -> Result<String> {
-        debug!("Calling token API");
+        debug!("Calling token api.");
         let resp = self
             .default_header(self.agent.post(urls::NEW_TOKEN))
             .send_json(ureq::json!({
@@ -108,12 +109,13 @@ impl Connector {
             }))?;
 
         let resp_token: response::token::Root = resp.into_json()?;
+        info!("Received new token.");
 
         Ok(resp_token.body.auth_token)
     }
 
     fn authenticate(&self, user: &str, token: &str) -> Result<()> {
-        debug!("Calling authenticate API");
+        debug!("Calling authenticate api.");
         if let Err(e) = self
             .default_header(self.agent.post(urls::AUTHENTICATE))
             .send_json(ureq::json!({
@@ -128,11 +130,11 @@ impl Connector {
                     let resp = e.into_response().unwrap();
                     match resp.status() {
                         401 => {
-                            debug!("Given token is outdated.");
+                            info!("Given token is outdated/not valid.");
                             bail!(ApiError::TokenOutdated)
                         }
                         _ => bail!(
-                            "Can't authenticate with current token: {:}",
+                            "Can't authenticate with current token. Response \"{}\".",
                             resp.into_string()?
                         ),
                     }
@@ -148,19 +150,20 @@ impl Connector {
 // PUBLIC INTERFACE //
 impl Connector {
     pub fn login(&self, user: &str, pwd: &str) -> Result<()> {
-        info!("Logging in as {}", user);
+        info!("Logging in as \"{}\".", &user);
         let mut token = self.token(user, pwd, false)?;
         if let Err(e) = self.authenticate(user, &token) {
             match e.downcast_ref() {
                 // force new token
                 Some(&ApiError::TokenOutdated) => {
+                    info!("Trying to get a new token.");
                     token = self.token(user, pwd, true)?;
                     self.authenticate(user, &token)?;
                 }
                 _ => bail!(e),
             }
         }
-        info!("Successfully logged in");
+        info!("Successfully logged in.");
         self.token_save_disk(&token);
         Ok(())
     }
