@@ -1,4 +1,5 @@
 use anyhow::anyhow;
+use log::{info, debug};
 use rusqlite::{params, Connection};
 
 use crate::response;
@@ -73,8 +74,10 @@ impl DB {
 
         if let Some(p) = path {
             conn = rusqlite::Connection::open(p)?;
+            info!("Opening Sqlite DB at {}.", p);
         } else {
             conn = rusqlite::Connection::open_in_memory()?;
+            info!("Opening Sqlite DB in memory.");
         }
 
         conn.execute(
@@ -100,6 +103,7 @@ impl DB {
             sensor_data.water_pressure_sensor,
             sensor_data.flow_temperature_sensor))?;
 
+        info!("Inserted Sensor Data into DB");
         Ok(())
     }
 
@@ -118,6 +122,7 @@ impl DB {
         })?;
 
         if let Some(data) = data_iter.next() {
+            debug!("Found Sensor Data at id: {}.", id.unwrap());
             data.map_err(|e| anyhow!(e))
         } else {
             Err(anyhow!("No SensorData found with for id."))
