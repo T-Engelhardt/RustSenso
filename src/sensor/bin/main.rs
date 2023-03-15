@@ -1,6 +1,6 @@
 use env_logger::Env;
 use log::{debug, error, info};
-use senso::{connector::Connector, response};
+use senso::connector::Connector;
 
 #[derive(Debug)]
 struct SensorData {
