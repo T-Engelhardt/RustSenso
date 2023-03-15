@@ -33,7 +33,7 @@ pub struct Connector {
 }
 
 impl Connector {
-    pub fn new(serial: String) ->Connector {
+    pub fn new(serial: String) -> Connector {
         let enforce_https = !cfg!(feature = "local_url");
 
         let agent = AgentBuilder::new()

@@ -1,14 +1,22 @@
+#[cfg(feature = "local_url")]
 use std::sync::Once;
 
+#[cfg(feature = "local_url")]
 use iso8601_timestamp::Timestamp;
+#[cfg(feature = "local_url")]
 use mockito::Server;
+#[cfg(feature = "local_url")]
 use serde_json::json;
 
+#[cfg(feature = "local_url")]
 extern crate senso;
 
+#[cfg(feature = "local_url")]
 static INIT: Once = Once::new();
+#[cfg(feature = "local_url")]
 static mut SERVER_GLOBAL: Option<Server> = None;
 
+#[cfg(feature = "local_url")]
 fn init() -> &'static mut Server {
     unsafe {
         INIT.call_once(|| {
@@ -20,6 +28,7 @@ fn init() -> &'static mut Server {
 }
 
 #[test]
+#[cfg(feature = "local_url")]
 fn login_test() {
     let server = init();
 
@@ -56,7 +65,7 @@ fn login_test() {
         .with_status(200)
         .create();
 
-    let mut c = senso::connector::Connector::new("1".into());
+    let c = senso::connector::Connector::new("1".into());
     c.login("u", "p").unwrap();
 
     // get first token from api/disk fail auth and retry
@@ -66,6 +75,7 @@ fn login_test() {
 }
 
 #[test]
+#[cfg(feature = "local_url")]
 fn status_test() {
     let server = init();
     let c = senso::connector::Connector::new("1".into());
@@ -177,6 +187,7 @@ fn status_test() {
 }
 
 #[test]
+#[cfg(feature = "local_url")]
 fn live_report_test() {
     let server = init();
     let c = senso::connector::Connector::new("1".into());

@@ -6,10 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [features]
 # no features by default
-default = ["local_url", "test_token"]
+default = []
 
 # use localhost instead of remote
-local_url = []
+local_url = ["test_token"]
 
 # use test token file
 test_token = []
@@ -22,6 +22,10 @@ path = "src/senso/mod.rs"
 name = "sensor"
 path = "src/sensor/bin/main.rs"
 required-features = []
+
+[[bin]]
+name = "test"
+path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0.69"

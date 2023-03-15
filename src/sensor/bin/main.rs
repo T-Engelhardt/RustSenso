@@ -1,17 +1,23 @@
-use log::warn;
+use log::{debug, error};
 use senso::connector::Connector;
 
 fn main() {
     env_logger::init();
 
     let c = Connector::new("21223900202609620938071939N6".into());
-    c.login("T.Engelhardt", "vZW5Sz4Xmj#I").unwrap();
+    c.login("T.Engelhardt", "vZW5Sz4Xmj#I")
+        .map_err(|e| error!("{}", e.to_string()))
+        .unwrap();
 
-    // TODO macro?? try x time before giving up
-    let status = c.system_status().unwrap();
-    println!("{:#?}", status);
+    let status = c
+        .system_status()
+        .map_err(|e| error!("{}", e.to_string()))
+        .unwrap();
+    debug!("{:#?}", status);
 
-    let live_report = c.live_report().unwrap();
-    println!("{:#?}", live_report);
-
+    let status = c
+        .live_report()
+        .map_err(|e| error!("{}", e.to_string()))
+        .unwrap();
+    debug!("{:#?}", status);
 }
