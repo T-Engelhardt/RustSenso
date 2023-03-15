@@ -21,7 +21,6 @@ path = "src/senso/mod.rs"
 [[bin]]
 name = "sensor"
 path = "src/sensor/bin/main.rs"
-required-features = []
 
 [[bin]]
 name = "test"
