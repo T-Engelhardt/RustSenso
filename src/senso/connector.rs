@@ -173,15 +173,11 @@ impl Connector {
         Ok(resp.into_json()?)
     }
 
-    pub fn live_report(&self) -> Result<()> {
+    pub fn live_report(&self) -> Result<response::live_report::Root> {
         let resp = self
             .default_header(self.agent.get(&urls::LIVE_REPORT(&self.serial)))
             .call()?;
 
-        let resp_json: serde_json::Value = resp.into_json()?;
-
-        println!("{}", serde_json::to_string_pretty(&resp_json)?);
-
-        Ok(())
+        Ok(resp.into_json()?)
     }
 }

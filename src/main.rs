@@ -10,13 +10,8 @@ fn main() {
 
     // TODO macro?? try x time before giving up
     let status = c.system_status().unwrap();
-    println!(
-        "{:?}\n Outside Temp: {}",
-        status, status.body.outside_temperature
-    );
-    println!(
-        "Meta Timestamp: {}",
-        status.meta.resource_state[0].timestamp.naive_local()
-    );
-    //c.live_report().unwrap();
+    println!("{:#?}", status);
+
+    let live_report = c.live_report().unwrap();
+    println!("{:#?}", live_report);
 }

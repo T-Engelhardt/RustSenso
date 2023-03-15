@@ -9,8 +9,6 @@ pub mod meta {
 
     use super::*;
     use chrono::{DateTime, Local};
-    use serde_with::serde_as;
-    use serde_with::TimestampMilliSeconds;
 
     #[derive(Debug, Deserialize)]
     pub struct MetaEmpty {}
@@ -21,12 +19,11 @@ pub mod meta {
         pub resource_state: Vec<ResourceState>,
     }
 
-    #[serde_as]
     #[derive(Debug, Deserialize)]
     pub struct ResourceState {
         pub link: Link,
         pub state: State,
-        #[serde_as(as = "TimestampMilliSeconds<i64>")]
+        #[serde(with = "timestamp_seconds_mill_or_not")]
         pub timestamp: DateTime<Local>,
     }
 
@@ -38,9 +35,10 @@ pub mod meta {
     }
 
     #[derive(Debug, PartialEq, Deserialize)]
+    #[serde(rename_all = "UPPERCASE")]
     pub enum State {
-        OUTDATED,
-        SYNCED,
+        Outdated,
+        Synced,
     }
 
     #[derive(Debug, PartialEq, Deserialize)]
@@ -84,5 +82,76 @@ pub mod status {
     pub struct Body {
         pub datetime: Timestamp,
         pub outside_temperature: f64,
+    }
+}
+
+// Live report
+pub mod live_report {
+    use super::{meta::Meta, *};
+
+    #[derive(Debug, Deserialize)]
+    pub struct Root {
+        pub body: Body,
+        pub meta: Meta,
+    }
+
+    #[derive(Debug, Deserialize)]
+    pub struct Body {
+        pub devices: Vec<Device>,
+    }
+
+    #[derive(Debug, Deserialize)]
+    pub struct Device {
+        #[serde(rename = "_id")]
+        pub id: String,
+        pub name: String,
+        pub reports: Vec<Report>,
+    }
+
+    #[derive(Debug, Deserialize)]
+    pub struct Report {
+        #[serde(rename = "_id")]
+        pub id: String,
+        pub name: String,
+        pub value: f64,
+        pub unit: String,
+        pub measurement_category: MeasurementCategory,
+        pub associated_device_function: Option<AssociatedDeviceFunction>,
+    }
+
+    #[derive(Debug, PartialEq, Deserialize)]
+    #[serde(rename_all = "UPPERCASE")]
+    pub enum MeasurementCategory {
+        Temperature,
+        Pressure,
+        #[serde(rename = "AIR_QUALITY")]
+        AirQuality,
+    }
+
+    #[derive(Debug, PartialEq, Deserialize)]
+    #[serde(rename_all = "UPPERCASE")]
+    pub enum AssociatedDeviceFunction {
+        Dhw,
+        Heating,
+        #[serde(rename = "RELATIVE_HUMIDITY")]
+        RelativeHumidity,
+    }
+}
+
+// Deserializer i64 that is a Timestamp or TimestampMilli to a DateTime<Local>
+mod timestamp_seconds_mill_or_not {
+    use chrono::{DateTime, Local, TimeZone};
+    use serde::{self, Deserialize, Deserializer};
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<DateTime<Local>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let timestamp = i64::deserialize(deserializer)?;
+        // https://www.compuhoy.com/is-unix-timestamp-in-seconds-or-milliseconds/
+        match timestamp.checked_ilog10().unwrap_or_default() {
+            0..=9 => Ok(Local.timestamp_opt(timestamp, 0).unwrap()),
+            _ => Ok(Local.timestamp_opt(timestamp / 1000, 0).unwrap()),
+        }
     }
 }
