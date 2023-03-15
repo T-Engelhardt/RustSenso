@@ -5,7 +5,7 @@ use senso::connector::Connector;
 fn main() {
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
 
-    let c = Connector::new("21223900202609620938071939N6".into());
+    let mut c = Connector::new("21223900202609620938071939N6".into());
     c.login("T.Engelhardt", "vZW5Sz4Xmj#I")
         .map_err(|e| error!("{}", e.to_string()))
         .unwrap();

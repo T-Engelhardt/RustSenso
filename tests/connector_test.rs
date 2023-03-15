@@ -31,6 +31,7 @@ fn init() -> &'static mut Server {
 #[cfg(feature = "local_url")]
 fn login_test() {
     let server = init();
+    let mut c = senso::connector::Connector::new("1".into());
 
     // return authToken
     let token_mock = server
@@ -65,8 +66,14 @@ fn login_test() {
         .with_status(200)
         .create();
 
-    let c = senso::connector::Connector::new("1".into());
-    c.login("u", "p").unwrap();
+    // check login
+    // should return Ok
+    assert_eq!(Ok(()), c.login("u", "p").map_err(|_| Err::<(), ()>(())));
+
+    // check that on second call of login we get also get a Ok
+    // map Error since we can't compare anyhow::Error
+    // log should only show info for one login
+    assert_eq!(Ok(()), c.login("u", "p").map_err(|_| Err::<(), ()>(())));
 
     // get first token from api/disk fail auth and retry
     token_mock.expect_at_most(2).assert();

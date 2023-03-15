@@ -4,7 +4,7 @@ use std::{
     time::Duration,
 };
 
-use anyhow::{bail, Result};
+use anyhow::{anyhow, bail, Result};
 use log::{debug, info, warn};
 use thiserror::Error;
 
@@ -30,6 +30,7 @@ pub enum ApiError {
 pub struct Connector {
     agent: Agent,
     serial: String,
+    login_state: Result<(), anyhow::Error>,
 }
 
 impl Connector {
@@ -41,7 +42,11 @@ impl Connector {
             .timeout_write(Duration::from_secs(5))
             .https_only(enforce_https)
             .build();
-        Connector { agent, serial }
+        Connector {
+            agent,
+            serial,
+            login_state: Err(anyhow!("Please login.")),
+        }
     }
 
     fn default_header(&self, req: Request) -> Request {
@@ -145,11 +150,8 @@ impl Connector {
             Ok(())
         }
     }
-}
 
-// PUBLIC INTERFACE //
-impl Connector {
-    pub fn login(&self, user: &str, pwd: &str) -> Result<()> {
+    pub fn login_unchecked(&self, user: &str, pwd: &str) -> Result<()> {
         info!("Logging in as \"{}\".", &user);
         let mut token = self.token(user, pwd, false)?;
         if let Err(e) = self.authenticate(user, &token) {
@@ -167,8 +169,36 @@ impl Connector {
         self.token_save_disk(&token);
         Ok(())
     }
+}
+
+// PUBLIC INTERFACE //
+impl Connector {
+    /// Tries to login to vaillant api.
+    /// On Error you can try again.
+    /// On Ok all future calls will return OK. On Ok this will never call the api again.
+    pub fn login(&mut self, user: &str, pwd: &str) -> Result<()> {
+
+        if let Ok(_) = &self.login_state {
+            info!("Already logged in.");
+            return Ok(());
+        }
+
+        // save new state
+        self.login_state = self.login_unchecked(user, pwd);
+
+        // return state for caller
+        match &self.login_state {
+            Ok(_) => Ok(()),
+            Err(e) => Err(anyhow!(e.to_string())),
+        }
+    }
 
     pub fn system_status(&self) -> Result<response::status::Root> {
+        #[cfg(not(feature = "local_url"))]
+        if let Err(e) = &self.login_state {
+            bail!(e.to_string())
+        }
+
         let resp = self
             .default_header(self.agent.get(&urls::SYSTEM_STATUS(&self.serial)))
             .call()?;
@@ -177,6 +207,11 @@ impl Connector {
     }
 
     pub fn live_report(&self) -> Result<response::live_report::Root> {
+        #[cfg(not(feature = "local_url"))]
+        if let Err(e) = &self.login_state {
+            bail!(e.to_string())
+        }
+
         let resp = self
             .default_header(self.agent.get(&urls::LIVE_REPORT(&self.serial)))
             .call()?;
