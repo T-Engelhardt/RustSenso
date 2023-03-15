@@ -1,2 +1,3 @@
 #!/bin/sh
-cargo test --all --features local_url
+export RUST_LOG='senso=debug'
+cargo test --all --features local_url -- --nocapture
