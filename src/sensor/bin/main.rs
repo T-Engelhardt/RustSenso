@@ -1,8 +1,9 @@
+use env_logger::Env;
 use log::{debug, error};
 use senso::connector::Connector;
 
 fn main() {
-    env_logger::init();
+    env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
 
     let c = Connector::new("21223900202609620938071939N6".into());
     c.login("T.Engelhardt", "vZW5Sz4Xmj#I")
