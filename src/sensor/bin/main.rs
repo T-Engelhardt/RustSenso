@@ -21,7 +21,7 @@ fn main() {
 
     let data = SensorData::new(&status, &live_report);
 
-    info!("{:#?}", &data);
+    info!("Got Sensor Data: {:#?}", &data);
 
     let db = DB::new(Some("./data.db"))
         .map_err(|e| error!("{}", e.to_string()))
