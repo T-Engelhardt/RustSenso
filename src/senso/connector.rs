@@ -177,7 +177,6 @@ impl Connector {
     /// On Error you can try again.
     /// On Ok all future calls will return OK. On Ok this will never call the api again.
     pub fn login(&mut self, user: &str, pwd: &str) -> Result<()> {
-
         if let Ok(_) = &self.login_state {
             info!("Already logged in.");
             return Ok(());

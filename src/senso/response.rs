@@ -136,6 +136,31 @@ pub mod live_report {
         #[serde(rename = "RELATIVE_HUMIDITY")]
         RelativeHumidity,
     }
+
+    impl Body {
+        // find all reports for given device id
+        pub fn find_reports_for_device(&self, device_id: &str) -> Option<&Vec<Report>> {
+            self.devices
+                .iter()
+                .find(|d| d.id == device_id)
+                .and_then(|x| Some(&x.reports))
+        }
+
+        // find report for given device and report id
+        pub fn find_report_for_device<'a>(
+            &'a self,
+            device_id: &'a str,
+            report_id: &'a str,
+        ) -> Option<&Report> {
+            let reports = self.find_reports_for_device(device_id)?;
+            find_report(reports, report_id)
+        }
+    }
+
+    // find report in Vec of reports
+    pub fn find_report<'a>(reports: &'a Vec<Report>, report_id: &'a str) -> Option<&'a Report> {
+        reports.iter().find(|r| r.id == report_id)
+    }
 }
 
 // Deserializer i64 that is a Timestamp or TimestampMilli to a DateTime<Local>

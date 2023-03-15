@@ -352,5 +352,14 @@ fn live_report_test() {
         live_report.meta.resource_state[0].timestamp.timestamp()
     );
 
+    assert_eq!(
+        44.5,
+        live_report
+            .body
+            .find_report_for_device("Control_DHW", "DomesticHotWaterTankTemperature")
+            .unwrap()
+            .value
+    );
+
     live_report_mock.assert();
 }
