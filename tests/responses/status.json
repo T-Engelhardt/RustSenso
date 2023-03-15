@@ -1,0 +1,18 @@
+{
+    "body": {
+        "datetime": "2023-03-14T13:40:24.000Z",
+        "outside_temperature": 4.2
+    },
+    "meta": {
+        "resourceState": [
+            {
+                "link": {
+                    "rel": "self",
+                    "resourceLink": "/facilities/21223900202609620938071939N6/systemcontrol/tli/v1/status"
+                },
+                "state": "OUTDATED",
+                "timestamp": 1624441392223
+            }
+        ]
+    }
+}

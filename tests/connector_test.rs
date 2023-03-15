@@ -91,27 +91,7 @@ fn status_test() {
 
     let status_mock = server
         .mock("GET", "/facilities/1/systemcontrol/tli/v1/status")
-        .with_body(
-            json!({
-                "body": {
-                  "datetime": "2023-03-14T13:40:24.000Z",
-                  "outside_temperature": 4.2
-                },
-                "meta": {
-                  "resourceState": [
-                    {
-                      "link": {
-                        "rel": "self",
-                        "resourceLink": "/facilities/21223900202609620938071939N6/systemcontrol/tli/v1/status"
-                      },
-                      "state": "OUTDATED",
-                      "timestamp": 1624441392223_i64
-                    }
-                  ]
-                }
-              })
-            .to_string(),
-        )
+        .with_body_from_file("tests/responses/status.json")
         .create();
 
     let status = c.system_status().unwrap();
@@ -153,27 +133,7 @@ fn status_test() {
 
     let status_mock = server
         .mock("GET", "/facilities/1/systemcontrol/tli/v1/status")
-        .with_body(
-            json!({
-                "body": {
-                  "datetime": "2023-03-14T13:40:24.000Z",
-                  "outside_temperature": 4.2
-                },
-                "meta": {
-                  "resourceState": [
-                    {
-                      "link": {
-                        "rel": "child",
-                        "resourceLink": "/facilities/21223900202609620938071939N6/systemcontrol/tli/v1/status"
-                      },
-                      "state": "SYNCED",
-                      "timestamp": 1624441392223_i64
-                    }
-                  ]
-                }
-              })
-            .to_string(),
-        )
+        .with_body_from_file("tests/responses/status2.json")
         .create();
 
     let status = c.system_status().unwrap();
@@ -201,136 +161,7 @@ fn live_report_test() {
 
     let live_report_mock = server
         .mock("GET", "/facilities/1/livereport/v1")
-        .with_body(
-            json!({
-                "body": {
-                    "devices": [
-                    {
-                        "_id": "Control_SYS_MultiMatic",
-                        "name": "VRC700 MultiMatic",
-                        "reports": [
-                        {
-                            "_id": "WaterPressureSensor",
-                            "name": "Water pressure",
-                            "value": 1.9,
-                            "unit": "bar",
-                            "measurement_category": "PRESSURE"
-                        },
-                        {
-                            "_id": "Co2Sensor1",
-                            "name": "Air quality",
-                            "value": 1000,
-                            "unit": "ppm",
-                            "measurement_category": "AIR_QUALITY"
-                        },
-                        {
-                            "_id": "HumidityCurrent",
-                            "name": "HumidityCurrent",
-                            "value": 40.0,
-                            "unit": "%",
-                            "measurement_category": "AIR_QUALITY",
-                            "associated_device_function": "RELATIVE_HUMIDITY"
-                            }
-                        ]
-                    },
-                    {
-                        "_id": "ll_HMU00_0304_flexotherm_PR_EBUS,8,0",
-                        "name": "Flexotherm",
-                        "reports": [
-                        {
-                            "_id": "BrinePressureSensor",
-                            "name": "Brine pressure",
-                            "value": 47.11,
-                            "unit": "bar",
-                            "measurement_category": "PRESSURE"
-                        }
-                        ]
-                    },
-                    {
-                        "_id": "Control_DHW",
-                        "name": "DHW",
-                        "reports": [
-                        {
-                            "_id": "DomesticHotWaterTankTemperature",
-                            "name": "Hot water tank temperature",
-                            "value": 44.5,
-                            "unit": "°C",
-                            "associated_device_function": "DHW",
-                            "measurement_category": "TEMPERATURE"
-                        }
-                        ]
-                    },
-                    {
-                        "_id": "Control_CC1",
-                        "name": "Heating circuit",
-                        "reports": [
-                        {
-                            "_id": "FlowTemperatureSensor",
-                            "name": "Flow temperature",
-                            "value": 38,
-                            "unit": "°C",
-                            "associated_device_function": "HEATING",
-                            "measurement_category": "TEMPERATURE"
-                        }
-                        ]
-                    }
-                    ]
-                },
-                "meta": {
-                    "resourceState": [
-                    {
-                        "state": "SYNCED",
-                        "link": {
-                        "rel": "child",
-                        "resourceLink": "/facilities/00000000000000000000000000N0/livereport/v1/devices/Control_SYS_MultiMatic/reports/WaterPressureSensor"
-                        },
-                        "timestamp": 1536127535056_i64
-                    },
-                    {
-                        "state": "SYNCED",
-                        "link": {
-                        "rel": "child",
-                        "resourceLink": "/facilities/00000000000000000000000000N0/livereport/v1/devices/Control_SYS_MultiMatic/reports/Co2Sensor1"
-                        },
-                        "timestamp": 1536127535058_i64
-                    },
-                    {
-                        "state": "SYNCED",
-                        "link": {
-                        "rel": "child",
-                        "resourceLink": "/facilities/00000000000000000000000000N0/livereport/v1/devices/ll_HMU00_0304_flexotherm_PR_EBUS,8,0/reports/BrinePressureSensor"
-                        },
-                        "timestamp": 1536127535059_i64
-                    },
-                    {
-                        "state": "SYNCED",
-                        "link": {
-                        "rel": "child",
-                        "resourceLink": "/facilities/00000000000000000000000000N0/livereport/v1/devices/ll_HMU00_0304_flexotherm_PR_EBUS,8,0/reports/PumpSetpoint"
-                        },
-                        "timestamp": 1536127535061_i64
-                    },
-                    {
-                        "state": "SYNCED",
-                        "link": {
-                        "rel": "child",
-                        "resourceLink": "/facilities/00000000000000000000000000N0/livereport/v1/devices/Control_DHW/reports/DomersticHotWaterTankTemperature"
-                        },
-                        "timestamp": 1536127535063_i64
-                    },
-                    {
-                        "state": "SYNCED",
-                        "link": {
-                        "rel": "child",
-                        "resourceLink": "/facilities/00000000000000000000000000N0/livereport/v1/devices/Control_CC1/reports/FlowTemperatureSensor"
-                        },
-                        "timestamp": 1678877419_i64
-                    }
-                    ]
-                }
-                })
-            .to_string(),
-        )
+        .with_body_from_file("tests/responses/live_report2.json")
         .create();
 
     let live_report = c.live_report().unwrap();
