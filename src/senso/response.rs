@@ -25,16 +25,30 @@ pub mod meta {
     #[derive(Debug, Deserialize)]
     pub struct ResourceState {
         pub link: Link,
-        pub state: String,
+        pub state: State,
         #[serde_as(as = "TimestampMilliSeconds<i64>")]
         pub timestamp: DateTime<Local>,
     }
 
     #[derive(Debug, Deserialize)]
     pub struct Link {
-        pub rel: String,
+        pub rel: Rel,
         #[serde(rename = "resourceLink")]
         pub resource_link: String,
+    }
+
+    #[derive(Debug, PartialEq, Deserialize)]
+    pub enum State {
+        OUTDATED,
+        SYNCED,
+    }
+
+    #[derive(Debug, PartialEq, Deserialize)]
+    pub enum Rel {
+        #[serde(rename = "child")]
+        Child,
+        #[serde(rename = "self")]
+        _Self,
     }
 }
 
