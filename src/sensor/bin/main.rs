@@ -1,6 +1,9 @@
 use env_logger::Env;
 use log::{debug, error, info};
-use senso::{connector::Connector, db::SensorData};
+use senso::{
+    connector::Connector,
+    db::{SensorData, DB},
+};
 
 fn main() {
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
@@ -18,5 +21,11 @@ fn main() {
 
     let data = SensorData::new(&status, &live_report);
 
-    info!("{:#?}", data);
+    info!("{:#?}", &data);
+
+    let db = DB::new(Some("./data.db"))
+        .map_err(|e| error!("{}", e.to_string()))
+        .unwrap();
+
+    let _ = db.insert_sensor_data(data).map_err(|e| error!("{}", e.to_string())).unwrap();
 }
