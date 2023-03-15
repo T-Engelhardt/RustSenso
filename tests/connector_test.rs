@@ -31,7 +31,7 @@ fn init() -> &'static mut Server {
 #[cfg(feature = "local_url")]
 fn login_test() {
     let server = init();
-    let mut c = senso::connector::Connector::new("1".into());
+    let mut c = senso::connector::Connector::new("1".into(), "./token_test".into());
 
     // return authToken
     let token_mock = server
@@ -85,7 +85,7 @@ fn login_test() {
 #[cfg(feature = "local_url")]
 fn status_test() {
     let server = init();
-    let c = senso::connector::Connector::new("1".into());
+    let c = senso::connector::Connector::new("1".into(), "".into());
 
     // STATUS MOCK 1
 
@@ -157,7 +157,7 @@ fn status_test() {
 #[cfg(feature = "local_url")]
 fn live_report_test() {
     let server = init();
-    let c = senso::connector::Connector::new("1".into());
+    let c = senso::connector::Connector::new("1".into(), "".into());
 
     let live_report_mock = server
         .mock("GET", "/facilities/1/livereport/v1")
@@ -201,7 +201,7 @@ fn insert_test() {
     use senso::db::DB;
 
     let server = init();
-    let c = senso::connector::Connector::new("2".into());
+    let c = senso::connector::Connector::new("2".into(), "".into());
 
     let live_report_mock = server
         .mock("GET", "/facilities/2/livereport/v1")

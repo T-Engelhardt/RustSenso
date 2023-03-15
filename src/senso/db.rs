@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use log::{info, debug};
+use log::{debug, info};
 use rusqlite::{params, Connection};
 
 use crate::response;

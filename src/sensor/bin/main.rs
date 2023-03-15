@@ -8,7 +8,7 @@ use senso::{
 fn main() {
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
 
-    let mut c = Connector::new("21223900202609620938071939N6".into());
+    let mut c = Connector::new("21223900202609620938071939N6".into(), "./token".into());
     c.login("T.Engelhardt", "vZW5Sz4Xmj#I")
         .map_err(|e| error!("{}", e.to_string()))
         .unwrap();
@@ -27,5 +27,7 @@ fn main() {
         .map_err(|e| error!("{}", e.to_string()))
         .unwrap();
 
-    let _ = db.insert_sensor_data(data).map_err(|e| error!("{}", e.to_string())).unwrap();
+    db.insert_sensor_data(data)
+        .map_err(|e| error!("{}", e.to_string()))
+        .unwrap();
 }

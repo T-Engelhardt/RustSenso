@@ -14,11 +14,6 @@ use super::{response, urls};
 
 const SMARTPHONE_ID: &str = "rustSenso";
 
-#[cfg(feature = "test_token")]
-const PATH_TOKEN: &str = "token_test";
-#[cfg(not(feature = "test_token"))]
-const PATH_TOKEN: &str = "token";
-
 #[derive(Error, Debug)]
 pub enum ApiError {
     #[error("Token Outdated")]
@@ -30,11 +25,12 @@ pub enum ApiError {
 pub struct Connector {
     agent: Agent,
     serial: String,
+    token_path: String,
     login_state: Result<(), anyhow::Error>,
 }
 
 impl Connector {
-    pub fn new(serial: String) -> Connector {
+    pub fn new(serial: String, token_path: String) -> Connector {
         let enforce_https = !cfg!(feature = "local_url");
 
         let agent = AgentBuilder::new()
@@ -45,6 +41,7 @@ impl Connector {
         Connector {
             agent,
             serial,
+            token_path,
             login_state: Err(anyhow!("Please login.")),
         }
     }
@@ -60,7 +57,7 @@ impl Connector {
             .write(true)
             .truncate(true)
             .create(true)
-            .open(PATH_TOKEN)
+            .open(&self.token_path)
         {
             Ok(f) => f,
             Err(e) => {
@@ -77,7 +74,9 @@ impl Connector {
     }
 
     fn token_from_disk(&self) -> Result<String> {
-        let mut file = std::fs::OpenOptions::new().read(true).open(PATH_TOKEN)?;
+        let mut file = std::fs::OpenOptions::new()
+            .read(true)
+            .open(&self.token_path)?;
         let mut buf = String::new();
         file.read_to_string(&mut buf)?;
         info!("Successfully read token from disk.");
@@ -92,7 +91,7 @@ impl Connector {
         // force new token from api
         if force {
             debug!("Force new token.");
-            let _ = fs::remove_file(PATH_TOKEN);
+            let _ = fs::remove_file(&self.token_path);
             return self.token_api(user, pwd);
         }
         // token not found on disk
