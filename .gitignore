@@ -4,3 +4,6 @@ token
 token_test
 
 .DS_Store
+
+# don't commit sqlite DB
+*.db

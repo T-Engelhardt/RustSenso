@@ -198,6 +198,8 @@ fn live_report_test() {
 #[test]
 #[cfg(feature = "local_url")]
 fn insert_test() {
+    use senso::db::DB;
+
     let server = init();
     let c = senso::connector::Connector::new("2".into());
 
@@ -234,9 +236,18 @@ fn insert_test() {
     );
 
     // test insert into SensorData
+
+    // first test api to SensorData
     let data = senso::db::SensorData::new(&Err(()), &Ok(live_report));
     let data_eq = senso::db::SensorData::new_raw(None, Some(45.5), Some(1.3), Some(38.5));
     assert_eq!(data_eq, data);
+
+    let db = DB::new(None).unwrap();
+
+    // insert and retrieve from DB
+    db.insert_sensor_data(data).unwrap();
+    let data_db = db.get_sensor_data(Some(1)).unwrap();
+    assert_eq!(data_eq, data_db);
 
     live_report_mock.assert();
 }

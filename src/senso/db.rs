@@ -1,3 +1,6 @@
+use anyhow::anyhow;
+use rusqlite::{params, Connection};
+
 use crate::response;
 
 #[derive(Debug, PartialEq)]
@@ -55,6 +58,69 @@ impl SensorData {
             domestic_hot_water_tank_temperature,
             water_pressure_sensor,
             flow_temperature_sensor,
+        }
+    }
+}
+
+pub struct DB {
+    conn: Connection,
+}
+
+impl DB {
+    // Opens sqlite at PATH or if None in memory
+    pub fn new(path: Option<&str>) -> Result<DB, anyhow::Error> {
+        let conn: Connection;
+
+        if let Some(p) = path {
+            conn = rusqlite::Connection::open(p)?;
+        } else {
+            conn = rusqlite::Connection::open_in_memory()?;
+        }
+
+        conn.execute(
+            r#"CREATE TABLE IF NOT EXISTS Temperature (
+            id INTEGER PRIMARY KEY,
+            time INTEGER NOT NULL,
+            outdoor REAL,
+            hotwatertank REAL,
+            waterpressure REAL,
+            heatingcircuit REAL)"#,
+            (),
+        )?;
+
+        Ok(DB { conn })
+    }
+
+    pub fn insert_sensor_data(&self, sensor_data: SensorData) -> Result<(), anyhow::Error> {
+        self.conn.execute(
+            r#"INSERT INTO Temperature (id, time, outdoor, hotwatertank, waterpressure, heatingcircuit)
+            VALUES (NULL, STRFTIME('%s'), ?1, ?2, ?3, ?4)"#,
+         (sensor_data.outdoor_temp,
+            sensor_data.domestic_hot_water_tank_temperature,
+            sensor_data.water_pressure_sensor,
+            sensor_data.flow_temperature_sensor))?;
+
+        Ok(())
+    }
+
+    pub fn get_sensor_data(&self, id: Option<usize>) -> Result<SensorData, anyhow::Error> {
+        let mut stmt = self.conn.prepare("SELECT outdoor, hotwatertank, waterpressure, heatingcircuit FROM Temperature WHERE id = :id;")?;
+        if id.is_none() {
+            todo!("Get latest ID.")
+        }
+        let mut data_iter = stmt.query_map(params![id], |row| {
+            Ok(SensorData::new_raw(
+                row.get(0)?,
+                row.get(1)?,
+                row.get(2)?,
+                row.get(3)?,
+            ))
+        })?;
+
+        if let Some(data) = data_iter.next() {
+            data.map_err(|e| anyhow!(e))
+        } else {
+            Err(anyhow!("No SensorData found with for id."))
         }
     }
 }
