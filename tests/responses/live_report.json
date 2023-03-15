@@ -1,0 +1,98 @@
+{
+    "body": {
+      "devices": [
+        {
+          "_id": "Control_DHW",
+          "name": "DomesticHotWaterCircuit",
+          "reports": [
+            {
+              "_id": "DomesticHotWaterTankTemperature",
+              "associated_device_function": "DHW",
+              "measurement_category": "TEMPERATURE",
+              "name": "DomesticHotWaterTankTemperature",
+              "unit": "°C",
+              "value": 45.5
+            }
+          ]
+        },
+        {
+          "_id": "Control_ZO1",
+          "name": "Zone 1",
+          "reports": [
+            {
+              "_id": "HumidityCurrent",
+              "associated_device_function": "RELATIVE_HUMIDITY",
+              "measurement_category": "AIR_QUALITY",
+              "name": "HumidityCurrent",
+              "unit": "%",
+              "value": 43.0
+            }
+          ]
+        },
+        {
+          "_id": "Control_SYS_senso",
+          "name": "sensoCOMFORT",
+          "reports": [
+            {
+              "_id": "WaterPressureSensor",
+              "associated_device_function": "HEATING",
+              "measurement_category": "PRESSURE",
+              "name": "WaterPressureSensor",
+              "unit": "bar",
+              "value": 1.3
+            }
+          ]
+        },
+        {
+          "_id": "Control_CC1",
+          "name": "Heating Circuit 1",
+          "reports": [
+            {
+              "_id": "FlowTemperatureSensor",
+              "associated_device_function": "HEATING",
+              "measurement_category": "TEMPERATURE",
+              "name": "FlowTemperatureSensor",
+              "unit": "°C",
+              "value": 38.5
+            }
+          ]
+        }
+      ]
+    },
+    "meta": {
+      "resourceState": [
+        {
+          "link": {
+            "rel": "child",
+            "resourceLink": "/facilities/21223900202609620938071939N6/livereport/v1/devices/Control_DHW/reports/DomesticHotWaterTankTemperature"
+          },
+          "state": "SYNCED",
+          "timestamp": 1678914606
+        },
+        {
+          "link": {
+            "rel": "child",
+            "resourceLink": "/facilities/21223900202609620938071939N6/livereport/v1/devices/Control_ZO1/reports/HumidityCurrent"
+          },
+          "state": "SYNCED",
+          "timestamp": 1678914616
+        },
+        {
+          "link": {
+            "rel": "child",
+            "resourceLink": "/facilities/21223900202609620938071939N6/livereport/v1/devices/Control_SYS_senso/reports/WaterPressureSensor"
+          },
+          "state": "SYNCED",
+          "timestamp": 1678914623
+        },
+        {
+          "link": {
+            "rel": "child",
+            "resourceLink": "/facilities/21223900202609620938071939N6/livereport/v1/devices/Control_CC1/reports/FlowTemperatureSensor"
+          },
+          "state": "SYNCED",
+          "timestamp": 1678914617
+        }
+      ]
+    }
+  }

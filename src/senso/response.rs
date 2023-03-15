@@ -143,7 +143,7 @@ pub mod live_report {
             self.devices
                 .iter()
                 .find(|d| d.id == device_id)
-                .and_then(|x| Some(&x.reports))
+                .map(|x| &x.reports)
         }
 
         // find report for given device and report id
@@ -158,7 +158,7 @@ pub mod live_report {
     }
 
     // find report in Vec of reports
-    pub fn find_report<'a>(reports: &'a Vec<Report>, report_id: &'a str) -> Option<&'a Report> {
+    pub fn find_report<'a>(reports: &'a [Report], report_id: &'a str) -> Option<&'a Report> {
         reports.iter().find(|r| r.id == report_id)
     }
 }

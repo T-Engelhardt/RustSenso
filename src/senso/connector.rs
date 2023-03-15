@@ -151,7 +151,7 @@ impl Connector {
         }
     }
 
-    pub fn login_unchecked(&self, user: &str, pwd: &str) -> Result<()> {
+    fn login_unchecked(&self, user: &str, pwd: &str) -> Result<()> {
         info!("Logging in as \"{}\".", &user);
         let mut token = self.token(user, pwd, false)?;
         if let Err(e) = self.authenticate(user, &token) {
@@ -177,7 +177,7 @@ impl Connector {
     /// On Error you can try again.
     /// On Ok all future calls will return OK. On Ok this will never call the api again.
     pub fn login(&mut self, user: &str, pwd: &str) -> Result<()> {
-        if let Ok(_) = &self.login_state {
+        if self.login_state.is_ok() {
             info!("Already logged in.");
             return Ok(());
         }

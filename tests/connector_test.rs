@@ -363,3 +363,49 @@ fn live_report_test() {
 
     live_report_mock.assert();
 }
+
+#[test]
+#[cfg(feature = "local_url")]
+fn insert_test() {
+    let server = init();
+    let c = senso::connector::Connector::new("2".into());
+
+    let live_report_mock = server
+        .mock("GET", "/facilities/2/livereport/v1")
+        .with_body_from_file("tests/responses/live_report.json")
+        .create();
+
+    let live_report = c.live_report().unwrap();
+
+    assert_eq!(
+        45.5,
+        live_report
+            .body
+            .find_report_for_device("Control_DHW", "DomesticHotWaterTankTemperature")
+            .unwrap()
+            .value
+    );
+    assert_eq!(
+        1.3,
+        live_report
+            .body
+            .find_report_for_device("Control_SYS_senso", "WaterPressureSensor")
+            .unwrap()
+            .value
+    );
+    assert_eq!(
+        38.5,
+        live_report
+            .body
+            .find_report_for_device("Control_CC1", "FlowTemperatureSensor")
+            .unwrap()
+            .value
+    );
+
+    // test insert into SensorData
+    let data = senso::db::SensorData::new(&Err(()), &Ok(live_report));
+    let data_eq = senso::db::SensorData::new_raw(None, Some(45.5), Some(1.3), Some(38.5));
+    assert_eq!(data_eq, data);
+
+    live_report_mock.assert();
+}
