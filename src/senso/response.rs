@@ -165,8 +165,10 @@ pub mod live_report {
 
 // Deserializer i64 that is a Timestamp or TimestampMilli to a DateTime<Local>
 mod timestamp_seconds_mill_or_not {
+    use std::{error, fmt};
+
     use chrono::{DateTime, Local, TimeZone};
-    use serde::{self, Deserialize, Deserializer};
+    use serde::de::{self, Deserialize, Deserializer};
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<DateTime<Local>, D::Error>
     where
@@ -175,8 +177,33 @@ mod timestamp_seconds_mill_or_not {
         let timestamp = i64::deserialize(deserializer)?;
         // https://www.compuhoy.com/is-unix-timestamp-in-seconds-or-milliseconds/
         match timestamp.checked_ilog10().unwrap_or_default() {
-            0..=9 => Ok(Local.timestamp_opt(timestamp, 0).unwrap()),
-            _ => Ok(Local.timestamp_opt(timestamp / 1000, 0).unwrap()),
+            0..=9 => convert_timestamp(timestamp).map_err(de::Error::custom),
+            _ => convert_timestamp(timestamp / 1000).map_err(de::Error::custom),
+        }
+    }
+
+    pub fn convert_timestamp(timestamp: i64) -> Result<DateTime<Local>, DeTimestampMilliNot> {
+        match Local.timestamp_opt(timestamp, 0) {
+            chrono::LocalResult::None => Err(DeTimestampMilliNot::Invalid),
+            chrono::LocalResult::Single(time) => Ok(time),
+            // return latest time
+            chrono::LocalResult::Ambiguous(_, time) => Ok(time),
+        }
+    }
+
+    #[derive(Debug)]
+    pub enum DeTimestampMilliNot {
+        Invalid,
+    }
+
+    impl error::Error for DeTimestampMilliNot {}
+
+    impl fmt::Display for DeTimestampMilliNot {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            use DeTimestampMilliNot::*;
+            match self {
+                Invalid => write!(f, "Invalid timestamp."),
+            }
         }
     }
 }

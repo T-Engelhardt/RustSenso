@@ -254,7 +254,7 @@ fn insert_test() {
 
     // insert and retrieve from DB
     db.insert_sensor_data(data).unwrap();
-    let data_db = db.get_sensor_data(Some(1)).unwrap();
+    let data_db = db.get_sensor_data(1).unwrap();
     assert_eq!(data_eq, data_db);
 
     live_report_mock.assert();

@@ -54,9 +54,13 @@ fn main() {
     info!("Starting sensor with: \n{}", args);
 
     let mut c = Connector::new(UrlBase::VaillantAPI, args.serial, args.token_file);
-    c.login(&args.user, &args.pwd)
+    if c.login(&args.user, &args.pwd)
         .map_err(|e| error!("{}", e.to_string()))
-        .unwrap();
+        .is_err()
+    {
+        error!("Failed to login.");
+        return;
+    }
 
     let status = c.system_status().map_err(|e| error!("{}", e.to_string()));
     debug!("{:#?}", status);
@@ -68,11 +72,15 @@ fn main() {
 
     info!("Got Sensor Data: {:#?}", &data);
 
-    let db = DB::new(Some(&args.db_file))
-        .map_err(|e| error!("{}", e.to_string()))
-        .unwrap();
-
-    db.insert_sensor_data(data)
-        .map_err(|e| error!("{}", e.to_string()))
-        .unwrap();
+    if let Ok(db) = DB::new(Some(&args.db_file)).map_err(|e| error!("{}", e.to_string())) {
+        if db
+            .insert_sensor_data(data)
+            .map_err(|e| error!("{}", e.to_string()))
+            .is_err()
+        {
+            error!("Could no insert sensor data in database.")
+        }
+    } else {
+        error!("Failed to open database.")
+    }
 }

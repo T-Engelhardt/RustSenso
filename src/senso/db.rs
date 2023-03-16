@@ -107,11 +107,9 @@ impl DB {
         Ok(())
     }
 
-    pub fn get_sensor_data(&self, id: Option<usize>) -> Result<SensorData, anyhow::Error> {
+    pub fn get_sensor_data(&self, id:usize) -> Result<SensorData, anyhow::Error> {
         let mut stmt = self.conn.prepare("SELECT outdoor, hotwatertank, waterpressure, heatingcircuit FROM Temperature WHERE id = :id;")?;
-        if id.is_none() {
-            todo!("Get latest ID.")
-        }
+
         let mut data_iter = stmt.query_map(params![id], |row| {
             Ok(SensorData::new_raw(
                 row.get(0)?,
@@ -122,7 +120,7 @@ impl DB {
         })?;
 
         if let Some(data) = data_iter.next() {
-            debug!("Found Sensor Data at id: {}.", id.unwrap());
+            debug!("Found Sensor Data at id: {}.", id);
             data.map_err(|e| anyhow!(e))
         } else {
             Err(anyhow!("No SensorData found with for id."))
