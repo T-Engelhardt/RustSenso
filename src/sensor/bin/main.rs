@@ -3,12 +3,17 @@ use log::{debug, error, info};
 use senso::{
     connector::Connector,
     db::{SensorData, DB},
+    urls::UrlBase,
 };
 
 fn main() {
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
 
-    let mut c = Connector::new("21223900202609620938071939N6".into(), "./token".into());
+    let mut c = Connector::new(
+        UrlBase::VaillantAPI,
+        "21223900202609620938071939N6".into(),
+        "./token".into(),
+    );
     c.login("T.Engelhardt", "vZW5Sz4Xmj#I")
         .map_err(|e| error!("{}", e.to_string()))
         .unwrap();

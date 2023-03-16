@@ -24,23 +24,23 @@ pub enum ApiError {
 
 pub struct Connector {
     agent: Agent,
-    serial: String,
+    disable_login_check: bool,
+    urls: Box<dyn urls::Urls>,
     token_path: String,
     login_state: Result<(), anyhow::Error>,
 }
 
 impl Connector {
-    pub fn new(serial: String, token_path: String) -> Connector {
-        let enforce_https = !cfg!(feature = "local_url");
-
+    pub fn new(url_base: urls::UrlBase, serial: String, token_path: String) -> Connector {
         let agent = AgentBuilder::new()
             .timeout_read(Duration::from_secs(5))
             .timeout_write(Duration::from_secs(5))
-            .https_only(enforce_https)
+            .https_only(url_base.is_https())
             .build();
         Connector {
             agent,
-            serial,
+            disable_login_check: url_base.can_disable_login_check(),
+            urls: Box::new(urls::VaillantV4::new(url_base, serial)),
             token_path,
             login_state: Err(anyhow!("Please login.")),
         }
@@ -105,7 +105,7 @@ impl Connector {
     fn token_api(&self, user: &str, pwd: &str) -> Result<String> {
         debug!("Calling token api.");
         let resp = self
-            .default_header(self.agent.post(urls::NEW_TOKEN))
+            .default_header(self.agent.post(self.urls.NEW_TOKEN()))
             .send_json(ureq::json!({
                 "smartphoneId": SMARTPHONE_ID,
                 "username": user,
@@ -121,7 +121,7 @@ impl Connector {
     fn authenticate(&self, user: &str, token: &str) -> Result<()> {
         debug!("Calling authenticate api.");
         if let Err(e) = self
-            .default_header(self.agent.post(urls::AUTHENTICATE))
+            .default_header(self.agent.post(self.urls.AUTHENTICATE()))
             .send_json(ureq::json!({
                 "smartphoneId": SMARTPHONE_ID,
                 "username": user,
@@ -192,26 +192,28 @@ impl Connector {
     }
 
     pub fn system_status(&self) -> Result<response::status::Root> {
-        #[cfg(not(feature = "local_url"))]
-        if let Err(e) = &self.login_state {
-            bail!(e.to_string())
+        if !self.disable_login_check {
+            if let Err(e) = &self.login_state {
+                bail!(e.to_string())
+            }
         }
 
         let resp = self
-            .default_header(self.agent.get(&urls::SYSTEM_STATUS(&self.serial)))
+            .default_header(self.agent.get(self.urls.SYSTEM_STATUS()))
             .call()?;
 
         Ok(resp.into_json()?)
     }
 
     pub fn live_report(&self) -> Result<response::live_report::Root> {
-        #[cfg(not(feature = "local_url"))]
-        if let Err(e) = &self.login_state {
-            bail!(e.to_string())
+        if !self.disable_login_check {
+            if let Err(e) = &self.login_state {
+                bail!(e.to_string())
+            }
         }
 
         let resp = self
-            .default_header(self.agent.get(&urls::LIVE_REPORT(&self.serial)))
+            .default_header(self.agent.get(self.urls.LIVE_REPORT()))
             .call()?;
 
         Ok(resp.into_json()?)

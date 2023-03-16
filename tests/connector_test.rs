@@ -1,22 +1,14 @@
-#[cfg(feature = "local_url")]
+use iso8601_timestamp::Timestamp;
+use mockito::Server;
+use serde_json::json;
 use std::sync::Once;
 
-#[cfg(feature = "local_url")]
-use iso8601_timestamp::Timestamp;
-#[cfg(feature = "local_url")]
-use mockito::Server;
-#[cfg(feature = "local_url")]
-use serde_json::json;
-
-#[cfg(feature = "local_url")]
 extern crate senso;
 
-#[cfg(feature = "local_url")]
 static INIT: Once = Once::new();
-#[cfg(feature = "local_url")]
+
 static mut SERVER_GLOBAL: Option<Server> = None;
 
-#[cfg(feature = "local_url")]
 fn init() -> &'static mut Server {
     unsafe {
         INIT.call_once(|| {
@@ -28,10 +20,14 @@ fn init() -> &'static mut Server {
 }
 
 #[test]
-#[cfg(feature = "local_url")]
+
 fn login_test() {
     let server = init();
-    let mut c = senso::connector::Connector::new("1".into(), "./token_test".into());
+    let mut c = senso::connector::Connector::new(
+        senso::urls::UrlBase::Localhost(8080),
+        "1".into(),
+        "./token_test".into(),
+    );
 
     // return authToken
     let token_mock = server
@@ -82,10 +78,14 @@ fn login_test() {
 }
 
 #[test]
-#[cfg(feature = "local_url")]
+
 fn status_test() {
     let server = init();
-    let c = senso::connector::Connector::new("1".into(), "".into());
+    let c = senso::connector::Connector::new(
+        senso::urls::UrlBase::Localhost(8080),
+        "1".into(),
+        "".into(),
+    );
 
     // STATUS MOCK 1
 
@@ -154,10 +154,14 @@ fn status_test() {
 }
 
 #[test]
-#[cfg(feature = "local_url")]
+
 fn live_report_test() {
     let server = init();
-    let c = senso::connector::Connector::new("1".into(), "".into());
+    let c = senso::connector::Connector::new(
+        senso::urls::UrlBase::Localhost(8080),
+        "1".into(),
+        "".into(),
+    );
 
     let live_report_mock = server
         .mock("GET", "/facilities/1/livereport/v1")
@@ -196,12 +200,16 @@ fn live_report_test() {
 }
 
 #[test]
-#[cfg(feature = "local_url")]
+
 fn insert_test() {
     use senso::db::DB;
 
     let server = init();
-    let c = senso::connector::Connector::new("2".into(), "".into());
+    let c = senso::connector::Connector::new(
+        senso::urls::UrlBase::Localhost(8080),
+        "2".into(),
+        "".into(),
+    );
 
     let live_report_mock = server
         .mock("GET", "/facilities/2/livereport/v1")

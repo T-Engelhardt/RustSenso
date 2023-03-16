@@ -1,13 +1,15 @@
 use log::info;
+use senso::urls;
 
 fn main() {
-    if !cfg!(feature = "local_url") {
-        panic!("Test only with local url");
-    }
-
     env_logger::builder()
         .filter_level(log::LevelFilter::Trace)
         .init();
 
     info!("Test Vaillant Rust");
+
+    println!(
+        "{:#?}",
+        urls::VaillantV4::new(urls::UrlBase::VaillantAPI, "".into())
+    );
 }
