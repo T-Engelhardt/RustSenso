@@ -32,6 +32,7 @@ ureq = { version="2.6.2", features = ["default", "cookies", "json"]}
 chrono = {version = "0.4.24", features = ["default", "serde"] }
 iso8601-timestamp = "0.2.10"
 rusqlite = { version = "0.28.0", features = ["bundled"] }
+clap = { version = "4.1.8", features = ["derive"] }
 
 [dev-dependencies]
 mockito = "1.0.0"

@@ -1,3 +1,6 @@
+use std::fmt;
+
+use clap::Parser;
 use env_logger::Env;
 use log::{debug, error, info};
 use senso::{
@@ -6,15 +9,52 @@ use senso::{
     urls::UrlBase,
 };
 
+/// Insert vaillant api sensor data from a facility into a sqlite database.
+#[derive(Parser)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// Specify the serial of the facility.
+    #[arg(short, long)]
+    serial: String,
+
+    /// Path of the Sqlite file.
+    /// Creates a new file if not found.
+    #[arg(short, long, default_value = "./data.db")]
+    db_file: String,
+
+    /// User name for login.
+    #[arg(long)]
+    user: String,
+
+    /// Password for login.
+    #[arg(long)]
+    pwd: String,
+
+    /// Path to token file.
+    /// Creates a new file if not found.
+    #[arg(short, long, default_value = "./token")]
+    token_file: String,
+}
+
+impl fmt::Display for Args {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "serial: {}\ndb_path: {}\ntoken_path: {}\nuser: {}\npwd: ###",
+            self.serial, self.db_file, self.token_file, self.user
+        )
+    }
+}
+
 fn main() {
+    let args = Args::parse();
+
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
 
-    let mut c = Connector::new(
-        UrlBase::VaillantAPI,
-        "21223900202609620938071939N6".into(),
-        "./token".into(),
-    );
-    c.login("T.Engelhardt", "vZW5Sz4Xmj#I")
+    info!("Starting sensor with: \n{}", args);
+
+    let mut c = Connector::new(UrlBase::VaillantAPI, args.serial, args.token_file);
+    c.login(&args.user, &args.pwd)
         .map_err(|e| error!("{}", e.to_string()))
         .unwrap();
 
@@ -28,7 +68,7 @@ fn main() {
 
     info!("Got Sensor Data: {:#?}", &data);
 
-    let db = DB::new(Some("./data.db"))
+    let db = DB::new(Some(&args.db_file))
         .map_err(|e| error!("{}", e.to_string()))
         .unwrap();
 
