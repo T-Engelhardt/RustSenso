@@ -23,7 +23,7 @@ pub mod meta {
     pub struct ResourceState {
         pub link: Link,
         pub state: State,
-        #[serde(with = "timestamp_seconds_mill_or_not")]
+        #[serde(with = "timestamp_seconds_milli_or_not")]
         pub timestamp: DateTime<Local>,
     }
 
@@ -164,7 +164,7 @@ pub mod live_report {
 }
 
 // Deserializer i64 that is a Timestamp or TimestampMilli to a DateTime<Local>
-mod timestamp_seconds_mill_or_not {
+mod timestamp_seconds_milli_or_not {
     use std::{error, fmt};
 
     use chrono::{DateTime, Local, TimeZone};
@@ -205,5 +205,78 @@ mod timestamp_seconds_mill_or_not {
                 Invalid => write!(f, "Invalid timestamp."),
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use chrono::{DateTime, Local};
+    use serde::Deserialize;
+
+    use super::{meta::Rel, meta::State, timestamp_seconds_milli_or_not};
+
+    #[derive(Debug, Deserialize)]
+    struct TestStructTS {
+        #[serde(with = "timestamp_seconds_milli_or_not")]
+        pub timestamp: DateTime<Local>,
+    }
+
+    #[test]
+    fn deserialize_timestamp_milli_or_not() {
+        // timestamp in seconds
+        let result: Result<TestStructTS, serde_json::Error> =
+            serde_json::from_str(r#"{"timestamp": 1678801224}"#);
+        assert_eq!(1678801224, result.unwrap().timestamp.timestamp());
+
+        // timestamp in miliseconds
+        let result: Result<TestStructTS, serde_json::Error> =
+            serde_json::from_str(r#"{"timestamp": 1536127535063}"#);
+        assert_eq!(1536127535, result.unwrap().timestamp.timestamp());
+    }
+
+    #[derive(Debug, Deserialize)]
+    struct TestStructState {
+        pub state: State,
+    }
+
+    #[test]
+    fn deserialize_meta_state() {
+        // outdated State
+        let result: Result<TestStructState, serde_json::Error> =
+            serde_json::from_str(r#"{"state": "OUTDATED"}"#);
+        assert_eq!(State::Outdated, result.unwrap().state);
+
+        // synced State
+        let result: Result<TestStructState, serde_json::Error> =
+            serde_json::from_str(r#"{"state": "SYNCED"}"#);
+        assert_eq!(State::Synced, result.unwrap().state);
+
+        // in lover case -> invalid
+        let result: Result<TestStructState, serde_json::Error> =
+            serde_json::from_str(r#"{"state": "synced"}"#);
+        assert!(result.is_err());
+    }
+
+    #[derive(Debug, Deserialize)]
+    struct TestStructRel {
+        pub rel: Rel,
+    }
+
+    #[test]
+    fn deserialize_meta_rel() {
+        // self
+        let result: Result<TestStructRel, serde_json::Error> =
+            serde_json::from_str(r#"{"rel": "self"}"#);
+        assert_eq!(Rel::_Self, result.unwrap().rel);
+
+        // child
+        let result: Result<TestStructRel, serde_json::Error> =
+            serde_json::from_str(r#"{"rel": "child"}"#);
+        assert_eq!(Rel::Child, result.unwrap().rel);
+
+        // invalid
+        let result: Result<TestStructRel, serde_json::Error> =
+            serde_json::from_str(r#"{"rel": "_Self"}"#);
+        assert!(result.is_err());
     }
 }

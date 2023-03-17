@@ -130,31 +130,6 @@ fn status_test() {
     );
 
     status_mock.assert();
-
-    // STATUS MOCK 2
-    // not a real status message
-    // just a test for the enums Rel/State
-
-    let status_mock = server
-        .mock("GET", "/facilities/1/systemcontrol/tli/v1/status")
-        .with_body_from_file("tests/responses/status2.json")
-        .create();
-
-    let status = c.system_status().unwrap();
-
-    // meta State enum
-    assert_eq!(
-        senso::response::meta::State::Synced,
-        status.meta.resource_state[0].state
-    );
-
-    // meta Rel enum
-    assert_eq!(
-        senso::response::meta::Rel::Child,
-        status.meta.resource_state[0].link.rel
-    );
-
-    status_mock.assert();
 }
 
 #[test]
@@ -173,23 +148,6 @@ fn live_report_test() {
         .create();
 
     let live_report = c.live_report().unwrap();
-
-    // test timestamp milli or not
-    assert_eq!(
-        1678877419_i64,
-        live_report
-            .meta
-            .resource_state
-            .last()
-            .unwrap()
-            .timestamp
-            .timestamp()
-    );
-
-    assert_eq!(
-        1536127535_i64,
-        live_report.meta.resource_state[0].timestamp.timestamp()
-    );
 
     assert_eq!(
         44.5,
