@@ -107,7 +107,7 @@ impl DB {
         Ok(())
     }
 
-    pub fn get_sensor_data(&self, id:usize) -> Result<SensorData, anyhow::Error> {
+    pub fn get_sensor_data(&self, id: usize) -> Result<SensorData, anyhow::Error> {
         let mut stmt = self.conn.prepare("SELECT outdoor, hotwatertank, waterpressure, heatingcircuit FROM Temperature WHERE id = :id;")?;
 
         let mut data_iter = stmt.query_map(params![id], |row| {
