@@ -1,7 +1,7 @@
 use iso8601_timestamp::Timestamp;
 use mockito::Server;
 use serde_json::json;
-use std::sync::Once;
+use std::{env, sync::Once};
 
 extern crate senso;
 
@@ -12,6 +12,10 @@ static mut SERVER_GLOBAL: Option<Server> = None;
 fn init() -> &'static mut Server {
     unsafe {
         INIT.call_once(|| {
+            // default senso=debug if RUST_LOG is not set
+            if env::var("RUST_LOG").is_err() {
+                env::set_var("RUST_LOG", "senso=debug")
+            }
             let _ = env_logger::builder().is_test(true).try_init();
             SERVER_GLOBAL = Some(mockito::Server::new_with_port(8080));
         });
