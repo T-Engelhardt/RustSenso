@@ -58,7 +58,7 @@ fn main() {
     info!("{} {}", env!("CARGO_PKG_NAME"), VERSION_STR);
     info!("Starting {} with: \n{}", env!("CARGO_PKG_NAME"), args);
 
-    let mut c = Connector::new(UrlBase::VaillantAPI, args.serial, args.token_file);
+    let mut c = Connector::new(UrlBase::VaillantSensoApi, args.serial, args.token_file);
     if c.login(&args.user, &args.pwd)
         .map_err(|e| error!("{}", e.to_string()))
         .is_err()

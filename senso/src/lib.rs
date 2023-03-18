@@ -1,5 +1,6 @@
 pub mod connector;
 pub mod db;
+pub mod request;
 pub mod response;
 pub mod urls;
 

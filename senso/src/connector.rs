@@ -6,9 +6,12 @@ use std::{
 
 use anyhow::{anyhow, bail, Result};
 use log::{debug, info, warn};
+use serde::de::DeserializeOwned;
 use thiserror::Error;
 
 use ureq::{Agent, AgentBuilder, Request};
+
+use crate::request::emf;
 
 use super::{response, urls};
 
@@ -168,6 +171,24 @@ impl Connector {
         self.token_save_disk(&token);
         Ok(())
     }
+
+    fn call_api<'a, T, P>(&self, url: &str, query: P) -> Result<T>
+    where
+        T: DeserializeOwned,
+        P: IntoIterator<Item = (&'a str, &'a str)>,
+    {
+        if !self.disable_login_check {
+            if let Err(e) = &self.login_state {
+                bail!(e.to_string())
+            }
+        }
+        let resp = self
+            .default_header(self.agent.get(url))
+            .query_pairs(query)
+            .call()?;
+
+        Ok(resp.into_json()?)
+    }
 }
 
 // PUBLIC INTERFACE //
@@ -192,30 +213,25 @@ impl Connector {
     }
 
     pub fn system_status(&self) -> Result<response::status::Root> {
-        if !self.disable_login_check {
-            if let Err(e) = &self.login_state {
-                bail!(e.to_string())
-            }
-        }
-
-        let resp = self
-            .default_header(self.agent.get(self.urls.SYSTEM_STATUS()))
-            .call()?;
-
-        Ok(resp.into_json()?)
+        self.call_api(self.urls.SYSTEM_STATUS(), emf::empty_query())
     }
 
     pub fn live_report(&self) -> Result<response::live_report::Root> {
-        if !self.disable_login_check {
-            if let Err(e) = &self.login_state {
-                bail!(e.to_string())
-            }
-        }
+        self.call_api(self.urls.LIVE_REPORT(), emf::empty_query())
+    }
 
-        let resp = self
-            .default_header(self.agent.get(self.urls.LIVE_REPORT()))
-            .call()?;
+    pub fn emf_devices(&self) -> Result<response::emf_devices::Root> {
+        self.call_api(self.urls.EMF_DEVICES(), emf::empty_query())
+    }
 
-        Ok(resp.into_json()?)
+    pub fn emf_report_device<'a, P>(
+        &self,
+        device_id: &str,
+        query: P,
+    ) -> Result<response::emf_report_device::Root>
+    where
+        P: IntoIterator<Item = (&'a str, &'a str)>,
+    {
+        self.call_api(self.urls.EMF_REPORT_DEVICE(device_id).as_ref(), query)
     }
 }

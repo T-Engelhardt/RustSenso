@@ -1,5 +1,6 @@
 use iso8601_timestamp::Timestamp;
 use mockito::Server;
+use senso::request::emf;
 use serde_json::json;
 use std::{env, sync::Once};
 
@@ -24,7 +25,6 @@ fn init() -> &'static mut Server {
 }
 
 #[test]
-
 fn login_test() {
     let server = init();
     let mut c = senso::connector::Connector::new(
@@ -82,7 +82,6 @@ fn login_test() {
 }
 
 #[test]
-
 fn status_test() {
     let server = init();
     let c = senso::connector::Connector::new(
@@ -133,7 +132,6 @@ fn status_test() {
 }
 
 #[test]
-
 fn live_report_test() {
     let server = init();
     let c = senso::connector::Connector::new(
@@ -162,7 +160,74 @@ fn live_report_test() {
 }
 
 #[test]
+fn emf_report_device_test() {
+    let server = init();
+    let c = senso::connector::Connector::new(
+        senso::urls::UrlBase::Localhost(8080),
+        "1".into(),
+        "".into(),
+    );
 
+    let emf_report_device_mock = server
+        .mock("GET", "/facilities/1/emf/v1/devices/x")
+        .with_body_from_file("tests/responses/emf_report_device.json")
+        .create();
+
+    let emf_report_device = c.emf_report_device("x", emf::empty_query()).unwrap();
+
+    assert_eq!(
+        3000.0,
+        emf_report_device
+            .body
+            .first()
+            .unwrap()
+            .dataset
+            .first()
+            .unwrap()
+            .value
+    );
+    assert_eq!(
+        1677456000,
+        emf_report_device
+            .body
+            .first()
+            .unwrap()
+            .dataset
+            .first()
+            .unwrap()
+            .key
+            .duration_since(Timestamp::UNIX_EPOCH)
+            .whole_seconds()
+    );
+
+    emf_report_device_mock.assert();
+}
+
+#[test]
+fn emf_devices() {
+    let server = init();
+    let c = senso::connector::Connector::new(
+        senso::urls::UrlBase::Localhost(8080),
+        "1".into(),
+        "".into(),
+    );
+
+    let emf_devices_mock = server
+        .mock("GET", "/facilities/1/emf/v1/devices")
+        .with_body_from_file("tests/responses/emf_devices.json")
+        .create();
+
+    let emf_devices = c.emf_devices().unwrap();
+
+    assert_eq!(
+        "VWL 55/6 A 230V",
+        emf_devices.body.first().unwrap().marketing_name
+    );
+
+    emf_devices_mock.assert();
+}
+
+#[test]
 fn insert_test() {
     use senso::db::DB;
 

@@ -15,6 +15,7 @@ ureq = { version="2.6.2", features = ["default", "cookies", "json"]}
 chrono = {version = "0.4.24", features = ["default", "serde"] }
 iso8601-timestamp = "0.2.10"
 rusqlite = { version = "0.28.0", features = ["bundled"] }
+strum_macros = "0.24.3"
 
 
 [dev-dependencies]

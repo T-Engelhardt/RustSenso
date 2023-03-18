@@ -6,8 +6,8 @@ use serde::Deserialize;
 
 // META
 pub mod meta {
-
     use super::*;
+
     use chrono::{DateTime, Local};
 
     #[derive(Debug, Deserialize)]
@@ -160,6 +160,96 @@ pub mod live_report {
     // find report in Vec of reports
     pub fn find_report<'a>(reports: &'a [Report], report_id: &'a str) -> Option<&'a Report> {
         reports.iter().find(|r| r.id == report_id)
+    }
+}
+
+pub mod emf_devices {
+    use super::{meta::MetaEmpty, *};
+
+    use iso8601_timestamp::Timestamp;
+    use strum_macros::AsRefStr;
+
+    #[derive(Debug, Deserialize)]
+    pub struct Root {
+        pub body: Vec<Body>,
+        pub meta: MetaEmpty,
+    }
+
+    #[derive(Debug, Deserialize)]
+    pub struct Body {
+        pub id: String,
+        #[serde(rename = "marketingName")]
+        pub marketing_name: String,
+        pub reports: Vec<Report>,
+        #[serde(rename = "type")]
+        pub type_field: EmfType,
+    }
+
+    #[derive(Debug, Deserialize)]
+    pub struct Report {
+        #[serde(rename = "currentMeterReading")]
+        pub current_meter_reading: f64,
+        #[serde(rename = "energyType")]
+        pub energy_type: EnergyType,
+        pub from: Timestamp,
+        pub function: EmfFunction,
+        pub to: Timestamp,
+    }
+
+    #[derive(Debug, PartialEq, Deserialize, AsRefStr)]
+    pub enum EnergyType {
+        #[serde(rename = "ENVIRONMENTAL_YIELD")]
+        #[strum(serialize = "ENVIRONMENTAL_YIELD")]
+        EnvironmentalYield,
+        #[serde(rename = "CONSUMED_ELECTRICAL_POWER")]
+        #[strum(serialize = "CONSUMED_ELECTRICAL_POWER")]
+        ConsumedElectricalPower,
+    }
+
+    #[derive(Debug, PartialEq, Deserialize, AsRefStr)]
+    pub enum EmfFunction {
+        #[serde(rename = "DHW")]
+        #[strum(serialize = "DHW")]
+        DomesticHotWater,
+        #[serde(rename = "CENTRAL_HEATING")]
+        #[strum(serialize = "CENTRAL_HEATING")]
+        CentralHeating,
+        #[serde(rename = "COOLING")]
+        #[strum(serialize = "COOLING")]
+        Cooling,
+    }
+
+    #[derive(Debug, PartialEq, Deserialize)]
+    pub enum EmfType {
+        #[serde(rename = "BOILER")]
+        Boiler,
+        #[serde(rename = "HEAT_PUMP")]
+        HeatPump,
+    }
+}
+
+pub mod emf_report_device {
+    use super::{meta::MetaEmpty, *};
+    use iso8601_timestamp::Timestamp;
+
+    #[derive(Debug, Deserialize)]
+    pub struct Root {
+        pub body: Vec<Body>,
+        pub meta: MetaEmpty,
+    }
+
+    #[derive(Debug, Deserialize)]
+    pub struct Body {
+        pub dataset: Vec<Dataset>,
+        pub key: Timestamp,
+        #[serde(rename = "summaryOfValues")]
+        pub summary_of_values: f64,
+    }
+
+    #[derive(Debug, Deserialize)]
+    pub struct Dataset {
+        pub key: Timestamp,
+        pub value: f64,
     }
 }
 

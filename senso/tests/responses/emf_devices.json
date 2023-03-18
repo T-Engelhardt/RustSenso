@@ -1,0 +1,75 @@
+{
+    "body": [
+        {
+            "id": "NoneGateway-LL_HMU03_0351_HP_Platform_Outdoor_Monobloc_PR_EBUS",
+            "marketingName": "VWL 55/6 A 230V",
+            "reports": [
+                {
+                    "currentMeterReading": 460000.0,
+                    "energyType": "CONSUMED_ELECTRICAL_POWER",
+                    "from": "2023-01-25",
+                    "function": "CENTRAL_HEATING",
+                    "to": "2023-03-18"
+                },
+                {
+                    "currentMeterReading": 0.0,
+                    "energyType": "CONSUMED_ELECTRICAL_POWER",
+                    "from": "2023-01-25",
+                    "function": "COOLING",
+                    "to": "2023-03-18"
+                },
+                {
+                    "currentMeterReading": 1268000.0,
+                    "energyType": "ENVIRONMENTAL_YIELD",
+                    "from": "2023-01-25",
+                    "function": "CENTRAL_HEATING",
+                    "to": "2023-03-18"
+                },
+                {
+                    "currentMeterReading": 189000.0,
+                    "energyType": "CONSUMED_ELECTRICAL_POWER",
+                    "from": "2023-01-25",
+                    "function": "DHW",
+                    "to": "2023-03-18"
+                },
+                {
+                    "currentMeterReading": 413000.0,
+                    "energyType": "ENVIRONMENTAL_YIELD",
+                    "from": "2023-01-25",
+                    "function": "DHW",
+                    "to": "2023-03-18"
+                },
+                {
+                    "currentMeterReading": 0.0,
+                    "energyType": "ENVIRONMENTAL_YIELD",
+                    "from": "2023-01-25",
+                    "function": "COOLING",
+                    "to": "2023-03-18"
+                }
+            ],
+            "type": "HEAT_PUMP"
+        },
+        {
+            "id": "NoneGateway-LL_VWZ02_0351_HP_Platform_Indoor_Monobloc_PR_EBUS",
+            "marketingName": "VIH QW 190/6 E MB1",
+            "reports": [
+                {
+                    "currentMeterReading": 3000.0,
+                    "energyType": "CONSUMED_ELECTRICAL_POWER",
+                    "from": "2023-01-25",
+                    "function": "CENTRAL_HEATING",
+                    "to": "2023-03-18"
+                },
+                {
+                    "currentMeterReading": 3000.0,
+                    "energyType": "CONSUMED_ELECTRICAL_POWER",
+                    "from": "2023-01-25",
+                    "function": "DHW",
+                    "to": "2023-03-18"
+                }
+            ],
+            "type": "BOILER"
+        }
+    ],
+    "meta": {}
+}
