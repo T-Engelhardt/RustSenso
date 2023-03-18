@@ -1,41 +1,6 @@
-[package]
-name = "vaillant_rust"
-version = "0.2.1"
-edition = "2021"
+[workspace]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-[features]
-# no features by default
-default = []
-
-[lib]
-name = "senso"
-path = "src/senso/mod.rs"
-
-[[bin]]
-name = "sensor"
-path = "src/sensor/bin/main.rs"
-
-[[bin]]
-name = "test"
-path = "src/main.rs"
-
-[dependencies]
-anyhow = "1.0.69"
-const_format = "0.2.30"
-env_logger = "0.10.0"
-log = "0.4.17"
-serde_json = "1.0.94"
-serde = { version = "1.0", features = ["default", "derive"] }
-thiserror = "1.0.39"
-ureq = { version="2.6.2", features = ["default", "cookies", "json"]}
-chrono = {version = "0.4.24", features = ["default", "serde"] }
-iso8601-timestamp = "0.2.10"
-rusqlite = { version = "0.28.0", features = ["bundled"] }
-clap = { version = "4.1.8", features = ["derive"] }
-
-[dev-dependencies]
-mockito = "1.0.0"
-
-[profile.release]
-lto = true
+members = [
+    "senso",
+    "sensor"
+]

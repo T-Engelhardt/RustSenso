@@ -1,6 +1,7 @@
 use std::fmt;
 
 use clap::Parser;
+use const_format::formatcp;
 use env_logger::Env;
 use log::{debug, error, info};
 use senso::{
@@ -9,9 +10,11 @@ use senso::{
     urls::UrlBase,
 };
 
+pub const VERSION_STR: &str =  formatcp!("v{}, senso v{}", env!("CARGO_PKG_VERSION"), senso::VERSION);
+
 /// Insert vaillant api sensor data from a facility into a sqlite database.
 #[derive(Parser)]
-#[command(version, about, long_about = None)]
+#[command(version = VERSION_STR, about, long_about = None)]
 struct Args {
     /// Specify the serial of the facility.
     #[arg(short, long)]
@@ -51,7 +54,8 @@ fn main() {
 
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
 
-    info!("Starting sensor with: \n{}", args);
+    info!("{} {}", env!("CARGO_PKG_NAME"), VERSION_STR);
+    info!("Starting {} with: \n{}", env!("CARGO_PKG_NAME"), args);
 
     let mut c = Connector::new(UrlBase::VaillantAPI, args.serial, args.token_file);
     if c.login(&args.user, &args.pwd)
