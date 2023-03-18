@@ -10,7 +10,8 @@ use senso::{
     urls::UrlBase,
 };
 
-pub const VERSION_STR: &str =  formatcp!("v{}, senso v{}", env!("CARGO_PKG_VERSION"), senso::VERSION);
+pub const VERSION_STR: &str =
+    formatcp!("v{}, senso v{}", env!("CARGO_PKG_VERSION"), senso::VERSION);
 
 /// Insert vaillant api sensor data from a facility into a sqlite database.
 #[derive(Parser)]
