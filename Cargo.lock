@@ -1471,6 +1471,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "usage"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "const_format",
+ "env_logger",
+ "log",
+ "senso",
+]
+
+[[package]]
 name = "vcpkg"
 version = "0.2.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"

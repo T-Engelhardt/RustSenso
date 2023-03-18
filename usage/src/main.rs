@@ -3,20 +3,19 @@ use std::fmt;
 use clap::Parser;
 use const_format::formatcp;
 use env_logger::Env;
-use log::{debug, error, info};
+use log::{error, info};
 use senso::{
     connector::Connector,
-    db::{SensorData, DB},
     urls::UrlBase,
 };
 
-// THIS PART IS THE SAME AS USAGE
-// ON CHANGES DONT FORGET TO CHANGE USAGE TOO
+// THIS PART IS THE SAME AS SENSOR
+// ON CHANGES DONT FORGET TO CHANGE SENSOR TOO
 // START
 pub const VERSION_STR: &str =
     formatcp!("v{}, senso v{}", env!("CARGO_PKG_VERSION"), senso::VERSION);
 
-/// Insert vaillant api sensor data from a facility into a sqlite database.
+/// Insert vaillant api usage data from a facility into a sqlite database.
 #[derive(Parser)]
 #[command(version = VERSION_STR, about, long_about = None)]
 struct Args {
@@ -71,25 +70,5 @@ fn main() {
     }
     // END SAME AS
 
-    let status = c.system_status().map_err(|e| error!("{}", e.to_string()));
-    debug!("{:#?}", status);
-
-    let live_report = c.live_report().map_err(|e| error!("{}", e.to_string()));
-    debug!("{:#?}", live_report);
-
-    let data = SensorData::new(&status, &live_report);
-
-    info!("Got Sensor Data: {:#?}", &data);
-
-    if let Ok(db) = DB::new(Some(&args.db_file)).map_err(|e| error!("{}", e.to_string())) {
-        if db
-            .insert_sensor_data(data)
-            .map_err(|e| error!("{}", e.to_string()))
-            .is_err()
-        {
-            error!("Could no insert sensor data in database.")
-        }
-    } else {
-        error!("Failed to open database.")
-    }
+    todo!("");
 }

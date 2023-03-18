@@ -2,5 +2,6 @@
 
 members = [
     "senso",
-    "sensor"
+    "sensor",
+    "usage",
 ]
