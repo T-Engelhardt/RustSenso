@@ -14,18 +14,18 @@ use cli_table::Table;
 /// data for central heating and hotwater with total
 #[derive(Debug, Table)]
 pub struct YpData {
-    ts: NaiveDateTime,
-    ch_hp_y: f64,
-    ch_hp_p: f64,
-    ch_bo_p: f64,
-    ch_yp: f64,
-    hw_hp_y: f64,
-    hw_hp_p: f64,
-    hw_bo_p: f64,
-    hw_yp: f64,
-    total_y: f64,
-    total_p: f64,
-    total_yp: f64,
+    pub ts: NaiveDateTime,
+    pub ch_hp_y: f64,
+    pub ch_hp_p: f64,
+    pub ch_bo_p: f64,
+    pub ch_yp: f64,
+    pub hw_hp_y: f64,
+    pub hw_hp_p: f64,
+    pub hw_bo_p: f64,
+    pub hw_yp: f64,
+    pub total_y: f64,
+    pub total_p: f64,
+    pub total_yp: f64,
 }
 
 impl YpData {

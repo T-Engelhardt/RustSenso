@@ -8,6 +8,7 @@ use env_logger::Env;
 use log::{error, info};
 use senso::{
     connector::Connector,
+    db::DB,
     response::emf_devices::{EmfFunction, EmfType},
     urls::UrlBase,
     yp::{self, UsageFunctionWeek},
@@ -98,6 +99,7 @@ fn main() {
 
     let week_nr = yesterday.iso_week().week();
     let year = yesterday.year();
+    let day = yesterday.weekday().num_days_from_monday();
 
     let mut usage_ch = UsageFunctionWeek::new(EmfFunction::CentralHeating, &devices, year, week_nr);
     let mut usage_dhw =
@@ -105,22 +107,40 @@ fn main() {
 
     if usage_ch
         .retrieve_data(&c)
-        .map_err(|e| error!("{}", e.to_string())).is_err() {
-            error!("Failed to retrieve data for central heating");
-            return;
-        }
+        .map_err(|e| error!("{}", e.to_string()))
+        .is_err()
+    {
+        error!("Failed to retrieve data for central heating");
+        return;
+    }
     if usage_dhw
         .retrieve_data(&c)
-        .map_err(|e| error!("{}", e.to_string())).is_err() {
-            error!("Failed to retrieve data for domestic hot water");
-            return;
-        }
+        .map_err(|e| error!("{}", e.to_string()))
+        .is_err()
+    {
+        error!("Failed to retrieve data for domestic hot water");
+        return;
+    }
 
     if let Ok(result) =
         yp::build_yp_data_vec(usage_dhw, usage_ch).map_err(|e| error!("{}", e.to_string()))
     {
         if args.cli_table {
             print_stdout(result.with_title()).unwrap();
+        } else {
+            info!("Got YP Data");
+        }
+
+        if let Ok(db) = DB::new(Some(&args.db_file)).map_err(|e| error!("{}", e.to_string())) {
+            if db
+                .insert_yp_data(&result[day as usize])
+                .map_err(|e| error!("{}", e.to_string()))
+                .is_err()
+            {
+                error!("Could no insert yp data in database.")
+            }
+        } else {
+            error!("Failed to open database.")
         }
     } else {
         error!("Failed to create yp data.");

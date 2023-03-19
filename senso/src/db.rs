@@ -2,7 +2,7 @@ use anyhow::anyhow;
 use log::{debug, info};
 use rusqlite::{params, Connection};
 
-use crate::response;
+use crate::{response, yp::YpData};
 
 #[derive(Debug, PartialEq)]
 pub struct SensorData {
@@ -91,6 +91,24 @@ impl DB {
             (),
         )?;
 
+        conn.execute(
+            r#" CREATE TABLE IF NOT EXISTS Usage (
+                id INTEGER PRIMARY KEY,
+                time INTEGER NOT NULL UNIQUE,
+                ch_hp_y INTEGER,
+                ch_hp_p INTEGER,
+                ch_bo_p INTEGER,
+                ch_yp REAL,
+                hw_hp_y INTEGER,
+                hw_hp_p INTEGER,
+                hw_bo_p INTEGER,
+                hw_yp REAL,
+                total_y INTEGER,
+                total_p INTEGER,
+                total_yp REAL)"#,
+            (),
+        )?;
+
         Ok(DB { conn })
     }
 
@@ -125,5 +143,26 @@ impl DB {
         } else {
             Err(anyhow!("No SensorData found with for id."))
         }
+    }
+
+    pub fn insert_yp_data(&self, yp_data: &YpData) -> Result<(), anyhow::Error> {
+        self.conn.execute(
+            r#"INSERT OR REPLACE INTO Usage (id, time, ch_hp_y, ch_hp_p, ch_bo_p, ch_yp, hw_hp_y, hw_hp_p, hw_bo_p, hw_yp, total_y, total_p, total_yp)
+            VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
+         (yp_data.ts.timestamp(),
+            yp_data.ch_hp_y,
+            yp_data.ch_hp_p,
+            yp_data.ch_bo_p,
+            yp_data.ch_yp,
+            yp_data.hw_hp_y,
+            yp_data.hw_hp_p,
+            yp_data.hw_bo_p,
+            yp_data.hw_yp,
+            yp_data.total_y,
+            yp_data.total_p,
+            yp_data.total_yp))?;
+
+        info!("Inserted YP Data into DB for day: {}", yp_data.ts);
+        Ok(())
     }
 }

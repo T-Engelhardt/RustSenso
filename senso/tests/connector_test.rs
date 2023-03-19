@@ -2,6 +2,7 @@ use cli_table::{print_stdout, WithTitle};
 use iso8601_timestamp::Timestamp;
 use mockito::{Matcher, Mock, Server};
 use senso::{
+    db::DB,
     request::emf,
     response::emf_devices::{EmfFunction, EmfType},
     yp::{build_yp_data_vec, UsageFunctionWeek},
@@ -398,6 +399,11 @@ fn yp() {
 
     // println!("{:#?}", result);
     print_stdout(result.with_title()).unwrap();
+
+    let db = DB::new(None).unwrap();
+
+    // insert and retrieve from DB
+    db.insert_yp_data(&result[0]).unwrap();
 
     for x in mocks {
         x.assert();
