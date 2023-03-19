@@ -23,6 +23,3 @@ cli-table = "0.4.7"
 [dev-dependencies]
 env_logger = "0.10.0"
 mockito = "1.0.0"
-
-[profile.release]
-lto = true

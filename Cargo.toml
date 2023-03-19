@@ -5,3 +5,6 @@ members = [
     "sensor",
     "usage",
 ]
+
+[profile.release]
+lto = true
