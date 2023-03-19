@@ -6,42 +6,227 @@ use crate::{
         emf_report_device,
     },
 };
-use anyhow::anyhow;
+use anyhow::{anyhow, bail};
+use array2d::Array2D;
 use chrono::{NaiveDate, NaiveDateTime};
+use cli_table::Table;
 
-pub struct Usage<'a> {
-    usage_vec: Vec<UsageFunction<'a>>,
+/// data for central heating and hotwater with total
+#[derive(Debug, Table)]
+pub struct YpData {
+    ts: NaiveDateTime,
+    ch_hp_y: f64,
+    ch_hp_p: f64,
+    ch_bo_p: f64,
+    ch_yp: f64,
+    hw_hp_y: f64,
+    hw_hp_p: f64,
+    hw_bo_p: f64,
+    hw_yp: f64,
+    total_y: f64,
+    total_p: f64,
+    total_yp: f64,
 }
 
-impl<'a> Usage<'a> {
-    pub fn new(usage_vec: Vec<UsageFunction<'a>>) -> Self {
-        Self { usage_vec }
+impl YpData {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        ts: NaiveDateTime,
+        ch_hp_y: f64,
+        ch_hp_p: f64,
+        ch_bo_p: f64,
+        ch_yp: f64,
+        hw_hp_y: f64,
+        hw_hp_p: f64,
+        hw_bo_p: f64,
+        hw_yp: f64,
+        total_y: f64,
+        total_p: f64,
+        total_yp: f64,
+    ) -> Self {
+        Self {
+            ts,
+            ch_hp_y,
+            ch_hp_p,
+            ch_bo_p,
+            ch_yp,
+            hw_hp_y,
+            hw_hp_p,
+            hw_bo_p,
+            hw_yp,
+            total_y,
+            total_p,
+            total_yp,
+        }
+    }
+}
+
+pub fn calc_yp(y: f64, p: f64) -> f64 {
+    if p == 0.0 {
+        0.0
+    } else {
+        // round with precision of 4 places after 0.0000
+        (((y + p) / p) * 10000.0).round() / 10000.0
+    }
+}
+
+pub fn build_yp_data_vec(
+    dhw: UsageFunctionWeek,
+    ch: UsageFunctionWeek,
+) -> anyhow::Result<Vec<YpData>> {
+    // get data for central heatings
+    // boiler and heat pump
+    let ch_hp_y_vec: Vec<f64> = ch
+        .get_dataset(EmfType::HeatPump, EnergyType::EnvironmentalYield)
+        .iter()
+        .map(|x| x.value)
+        .collect();
+    let ch_hp_p_vec: Vec<f64> = ch
+        .get_dataset(EmfType::HeatPump, EnergyType::ConsumedElectricalPower)
+        .iter()
+        .map(|x| x.value)
+        .collect();
+    let ch_bo_p_vec: Vec<f64> = ch
+        .get_dataset(EmfType::Boiler, EnergyType::ConsumedElectricalPower)
+        .iter()
+        .map(|x| x.value)
+        .collect();
+
+    // power usage of central heating
+    let ch_p_vec: Vec<f64> = ch_hp_p_vec
+        .iter()
+        .zip(ch_bo_p_vec.iter())
+        .map(|x| *x.0 + *x.1)
+        .collect();
+    // yp of central heating
+    let cp_yp_vec: Vec<f64> = ch_hp_y_vec
+        .iter()
+        .zip(ch_p_vec.iter())
+        .map(|x| calc_yp(*x.0, *x.1))
+        .collect();
+
+    // get data for hot water
+    // boiler and heat pump
+    let hw_hp_y_vec: Vec<f64> = dhw
+        .get_dataset(EmfType::HeatPump, EnergyType::EnvironmentalYield)
+        .iter()
+        .map(|x| x.value)
+        .collect();
+    let hw_hp_p_vec: Vec<f64> = dhw
+        .get_dataset(EmfType::HeatPump, EnergyType::ConsumedElectricalPower)
+        .iter()
+        .map(|x| x.value)
+        .collect();
+    let hw_bo_p_vec: Vec<f64> = dhw
+        .get_dataset(EmfType::Boiler, EnergyType::ConsumedElectricalPower)
+        .iter()
+        .map(|x| x.value)
+        .collect();
+
+    // power usage of how water
+    let hw_p_vec: Vec<f64> = hw_hp_p_vec
+        .iter()
+        .zip(hw_bo_p_vec.iter())
+        .map(|x| x.0 + x.1)
+        .collect();
+    // yp of hot water
+    let hw_yp_vec: Vec<f64> = hw_hp_y_vec
+        .iter()
+        .zip(hw_p_vec.iter())
+        .map(|x| calc_yp(*x.0, *x.1))
+        .collect();
+
+    // total
+    // yield
+    // only from heatpump
+    let total_y: Vec<f64> = ch_hp_y_vec
+        .iter()
+        .zip(hw_hp_y_vec.iter())
+        .map(|x| x.0 + x.1)
+        .collect();
+    // power
+    let total_p: Vec<f64> = ch_p_vec
+        .iter()
+        .zip(hw_p_vec.iter())
+        .map(|x| x.0 + x.1)
+        .collect();
+    // yp
+    let total_yp: Vec<f64> = total_y
+        .iter()
+        .zip(total_p.iter())
+        .map(|x| calc_yp(*x.0, *x.1))
+        .collect();
+
+    // create matrix from all the vecs
+    // order important for result
+    let vec2d: Vec<Vec<f64>> = vec![
+        ch_hp_y_vec,
+        ch_hp_p_vec,
+        ch_bo_p_vec,
+        cp_yp_vec,
+        hw_hp_y_vec,
+        hw_hp_p_vec,
+        hw_bo_p_vec,
+        hw_yp_vec,
+        total_y,
+        total_p,
+        total_yp,
+    ];
+
+    let matrix = match Array2D::from_rows(&vec2d) {
+        Ok(m) => m,
+        Err(_) => bail!("Can't create Array2D from vec2d"),
+    };
+
+    // create 2d vec but over columns
+    let matrix = matrix.as_columns();
+
+    // create timestamp
+    // TODO check if correct
+    let mut timestamps: Vec<NaiveDateTime> = Vec::with_capacity(7);
+
+    for day in 0..=6_u8 {
+        // SAFTEY weekday enum is defined between 0 and 6
+        timestamps.push(
+            NaiveDate::from_isoywd_opt(dhw.year, dhw.week_nr, unsafe { std::mem::transmute(day) })
+                .ok_or(anyhow!("out-of-range date and/or invalid week number"))?
+                .and_hms_opt(0, 0, 0)
+                .ok_or(anyhow!(""))?,
+        );
     }
 
-    pub fn get_yield(&self) {}
+    let mut result: Vec<YpData> = Vec::with_capacity(7);
 
-    pub fn get_power(&self) {}
-
-    pub fn get_yp(&self) {}
-
-    pub fn get_timestamp(&self) {}
+    // order from vec2d
+    for (i, data) in matrix.iter().enumerate() {
+        result.push(YpData::new(
+            timestamps[i],
+            data[0],
+            data[1],
+            data[2],
+            data[3],
+            data[4],
+            data[5],
+            data[6],
+            data[7],
+            data[8],
+            data[9],
+            data[10],
+        ))
+    }
+    Ok(result)
 }
 
 #[derive(Debug)]
-pub struct UsageFunction<'a> {
+pub struct UsageFunctionWeek<'a> {
     function: EmfFunction,
     devices: &'a Vec<(EmfType, &'a str)>,
     year: i32,
     week_nr: u32,
-    timestamps: Vec<NaiveDateTime>,
     data: Vec<(EmfType, EnergyType, emf_report_device::Root)>,
-    y_total: Vec<f64>,
-    p_total: Vec<f64>,
-    yp: Vec<f64>,
 }
 
-impl<'a> UsageFunction<'a> {
-    // !! currently only one week is supported
+impl<'a> UsageFunctionWeek<'a> {
     pub fn new(
         function: EmfFunction,
         devices: &'a Vec<(EmfType, &'a str)>,
@@ -52,12 +237,8 @@ impl<'a> UsageFunction<'a> {
             function,
             devices,
             data: Vec::with_capacity(devices.len() * 2),
-            timestamps: Vec::with_capacity(7),
             year,
             week_nr,
-            y_total: Vec::with_capacity(7),
-            p_total: Vec::with_capacity(7),
-            yp: Vec::with_capacity(7),
         }
     }
 
@@ -99,63 +280,29 @@ impl<'a> UsageFunction<'a> {
             }
         }
 
-        // generate timestamps from week nr and year
-        for day in 0..=6_u8 {
-            // SAFTEY weekday enum is defined between 0 and 6
-            self.timestamps.push(
-                NaiveDate::from_isoywd_opt(self.year, self.week_nr, unsafe {
-                    std::mem::transmute(day)
-                })
-                .ok_or(anyhow!("out-of-range date and/or invalid week number"))?
-                .and_hms_opt(0, 0, 0)
-                .ok_or(anyhow!(""))?,
-            );
-        }
-
-        // calculate yield and power for this Funktion (DHW, CH) => depends on what is set in ::new()
-        // iter over dataset per day
-        // body only includes on item in vec
-        for day in 0..=6 {
-            let mut y = 0.0;
-            let mut p = 0.0;
-
-            for d in &self.data {
-                match d.1 {
-                    EnergyType::EnvironmentalYield => {
-                        y += d.2.body.first().ok_or(anyhow!("Empty Body"))?.dataset[day].value
-                    }
-                    EnergyType::ConsumedElectricalPower => {
-                        p += d.2.body.first().ok_or(anyhow!("Empty Body"))?.dataset[day].value
-                    }
-                }
-            }
-            self.y_total.push(y);
-            self.p_total.push(p);
-        }
-
-        // calculate y+p/p
-        // AZ = Heizwärme (kWh/a) / Strom (kWh/a)
-        // Heizwärme Gesamtewärme power + yield
-        self.yp = self
-            .y_total
-            .iter()
-            .zip(self.p_total.iter())
-            .map(|x| (x.0 + x.1) / x.1)
-            .collect();
-
         Ok(())
     }
 
-    pub fn get_yield(&self, emf_type: EmfType) {}
+    pub fn get_dataset(
+        &self,
+        emf_type: EmfType,
+        energy_type: EnergyType,
+    ) -> Vec<&emf_report_device::Dataset> {
+        let t: &Vec<&emf_report_device::Dataset> = &self
+            .data
+            .iter()
+            .filter_map(|f| {
+                if f.0 == emf_type && f.1 == energy_type {
+                    // body should always includes one dataset
+                    Some(&f.2.body.first()?.dataset)
+                } else {
+                    None
+                }
+            })
+            .flatten()
+            .collect();
 
-    pub fn get_power(&self, emf_type: EmfType) {}
-
-    pub fn get_yp(&self) -> &Vec<f64> {
-        &self.yp
-    }
-
-    pub fn get_timestamp(&self) -> &Vec<NaiveDateTime> {
-        &self.timestamps
+        t.to_owned()
     }
 }
 

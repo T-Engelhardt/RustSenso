@@ -1,6 +1,8 @@
 use std::fmt;
 
+use chrono::{Datelike, Duration};
 use clap::Parser;
+use cli_table::{print_stdout, WithTitle};
 use const_format::formatcp;
 use env_logger::Env;
 use log::{error, info};
@@ -8,7 +10,7 @@ use senso::{
     connector::Connector,
     response::emf_devices::{EmfFunction, EmfType},
     urls::UrlBase,
-    yp::UsageFunction,
+    yp::{self, UsageFunctionWeek},
 };
 
 // THIS PART IS THE SAME AS SENSOR
@@ -42,6 +44,15 @@ struct Args {
     /// Creates a new file if not found.
     #[arg(short, long, default_value = "./token")]
     token_file: String,
+
+    /// print cli_table in stdout
+    #[arg(short, long, default_value_t = true)]
+    cli_table: bool,
+
+    /// how many days back from today in UTC.
+    /// 1 => yesterday
+    #[arg(long, default_value_t = 1)]
+    delta: i64,
 }
 
 impl fmt::Display for Args {
@@ -82,8 +93,36 @@ fn main() {
             "NoneGateway-LL_VWZ02_0351_HP_Platform_Indoor_Monobloc_PR_EBUS",
         ),
     ];
-    let mut usage_ch = UsageFunction::new(EmfFunction::CentralHeating, &devices, 2023, 7);
-    usage_ch.retrieve_data(&c).unwrap();
 
-    println!("{:#?}", usage_ch);
+    let yesterday = chrono::offset::Utc::now() - Duration::days(args.delta);
+
+    let week_nr = yesterday.iso_week().week();
+    let year = yesterday.year();
+
+    let mut usage_ch = UsageFunctionWeek::new(EmfFunction::CentralHeating, &devices, year, week_nr);
+    let mut usage_dhw =
+        UsageFunctionWeek::new(EmfFunction::DomesticHotWater, &devices, year, week_nr);
+
+    if usage_ch
+        .retrieve_data(&c)
+        .map_err(|e| error!("{}", e.to_string())).is_err() {
+            error!("Failed to retrieve data for central heating");
+            return;
+        }
+    if usage_dhw
+        .retrieve_data(&c)
+        .map_err(|e| error!("{}", e.to_string())).is_err() {
+            error!("Failed to retrieve data for domestic hot water");
+            return;
+        }
+
+    if let Ok(result) =
+        yp::build_yp_data_vec(usage_dhw, usage_ch).map_err(|e| error!("{}", e.to_string()))
+    {
+        if args.cli_table {
+            print_stdout(result.with_title()).unwrap();
+        }
+    } else {
+        error!("Failed to create yp data.");
+    }
 }

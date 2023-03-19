@@ -1,9 +1,10 @@
+use cli_table::{print_stdout, WithTitle};
 use iso8601_timestamp::Timestamp;
-use mockito::{Matcher, Server};
+use mockito::{Matcher, Mock, Server};
 use senso::{
     request::emf,
     response::emf_devices::{EmfFunction, EmfType},
-    yp::UsageFunction,
+    yp::{build_yp_data_vec, UsageFunctionWeek},
 };
 use serde_json::json;
 use std::{env, sync::Once};
@@ -303,30 +304,102 @@ fn yp() {
         "".into(),
     );
 
-    let emf_report_device_mock = server
+    let same_match = Matcher::AllOf(vec![
+        Matcher::UrlEncoded("timeRange".into(), "WEEK".into()),
+        Matcher::UrlEncoded("start".into(), "2023-02-27".into()),
+        Matcher::UrlEncoded("offset".into(), "0".into()),
+    ]);
+
+    // data from db id 19..=25
+    // ch_yp: 4.1667, 4, 3.5, 4, 5, 5, 4
+    // hw_yp: 3, 3, 3.3333, 3.25, 4, 3.5, 2.75
+    // total_y: 25000, 25000, 27000, 27000, 2200, 2200, 25000
+    // total_p: 9000, 9000, 11000, 10000, 6000, 7000, 10000
+    // total_yp: 3.7778, 3.7778, 3.4545, 3.7, 4.6667, 4.1429, 3.5
+    // ts: TODO 2023-02-27 till 2023-03-05
+
+    let mut mocks: Vec<&Mock> = vec![];
+
+    // CENTRAL_HEATING
+    let m = &server
         .mock("GET", "/facilities/1/emf/v1/devices/hp")
-        .with_body_from_file("tests/responses/emf_report_device.json")
+        .with_body_from_file("tests/responses/emf_report/ch_hp_p.json")
         .match_query(Matcher::AllOf(vec![
-            // same for every request
-            Matcher::AllOf(vec![
-                Matcher::UrlEncoded("timeRange".into(), "WEEK".into()),
-                Matcher::UrlEncoded("start".into(), "2023-02-27".into()),
-                Matcher::UrlEncoded("function".into(), "CENTRAL_HEATING".into()),
-                Matcher::UrlEncoded("offset".into(), "0".into()),
-            ]),
-            // for the first request power for the second yield
-            Matcher::AnyOf(vec![
-                Matcher::UrlEncoded("energyType".into(), "CONSUMED_ELECTRICAL_POWER".into()),
-                Matcher::UrlEncoded("energyType".into(), "ENVIRONMENTAL_YIELD".into()),
-            ]),
+            same_match.clone(),
+            Matcher::UrlEncoded("energyType".into(), "CONSUMED_ELECTRICAL_POWER".into()),
+            Matcher::UrlEncoded("function".into(), "CENTRAL_HEATING".into()),
         ]))
         .create();
+    mocks.push(m);
 
-    let devices = vec![(EmfType::HeatPump, "hp")];
-    let mut usage_ch = UsageFunction::new(EmfFunction::CentralHeating, &devices, 2023, 9);
+    let m = &server
+        .mock("GET", "/facilities/1/emf/v1/devices/hp")
+        .with_body_from_file("tests/responses/emf_report/ch_hp_y.json")
+        .match_query(Matcher::AllOf(vec![
+            same_match.clone(),
+            Matcher::UrlEncoded("energyType".into(), "ENVIRONMENTAL_YIELD".into()),
+            Matcher::UrlEncoded("function".into(), "CENTRAL_HEATING".into()),
+        ]))
+        .create();
+    mocks.push(m);
+
+    let m = &server
+        .mock("GET", "/facilities/1/emf/v1/devices/bo")
+        .with_body_from_file("tests/responses/emf_report/ch_bo_p.json")
+        .match_query(Matcher::AllOf(vec![
+            same_match.clone(),
+            Matcher::UrlEncoded("energyType".into(), "CONSUMED_ELECTRICAL_POWER".into()),
+            Matcher::UrlEncoded("function".into(), "CENTRAL_HEATING".into()),
+        ]))
+        .create();
+    mocks.push(m);
+
+    // DHW
+    let m = &server
+        .mock("GET", "/facilities/1/emf/v1/devices/hp")
+        .with_body_from_file("tests/responses/emf_report/hw_hp_p.json")
+        .match_query(Matcher::AllOf(vec![
+            same_match.clone(),
+            Matcher::UrlEncoded("energyType".into(), "CONSUMED_ELECTRICAL_POWER".into()),
+            Matcher::UrlEncoded("function".into(), "DHW".into()),
+        ]))
+        .create();
+    mocks.push(m);
+
+    let m = &server
+        .mock("GET", "/facilities/1/emf/v1/devices/hp")
+        .with_body_from_file("tests/responses/emf_report/hw_hp_y.json")
+        .match_query(Matcher::AllOf(vec![
+            same_match.clone(),
+            Matcher::UrlEncoded("energyType".into(), "ENVIRONMENTAL_YIELD".into()),
+            Matcher::UrlEncoded("function".into(), "DHW".into()),
+        ]))
+        .create();
+    mocks.push(m);
+
+    let m = &server
+        .mock("GET", "/facilities/1/emf/v1/devices/bo")
+        .with_body_from_file("tests/responses/emf_report/hw_bo_p.json")
+        .match_query(Matcher::AllOf(vec![
+            same_match.clone(),
+            Matcher::UrlEncoded("energyType".into(), "CONSUMED_ELECTRICAL_POWER".into()),
+            Matcher::UrlEncoded("function".into(), "DHW".into()),
+        ]))
+        .create();
+    mocks.push(m);
+
+    let devices = vec![(EmfType::HeatPump, "hp"), (EmfType::Boiler, "bo")];
+    let mut usage_ch = UsageFunctionWeek::new(EmfFunction::CentralHeating, &devices, 2023, 9);
+    let mut usage_dhw = UsageFunctionWeek::new(EmfFunction::DomesticHotWater, &devices, 2023, 9);
     usage_ch.retrieve_data(&c).unwrap();
+    usage_dhw.retrieve_data(&c).unwrap();
 
-    println!("{:#?}", usage_ch);
+    let result = build_yp_data_vec(usage_dhw, usage_ch).unwrap();
 
-    emf_report_device_mock.expect(2).assert()
+    // println!("{:#?}", result);
+    print_stdout(result.with_title()).unwrap();
+
+    for x in mocks {
+        x.assert();
+    }
 }
