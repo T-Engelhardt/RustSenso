@@ -206,7 +206,7 @@ pub mod emf_devices {
         ConsumedElectricalPower,
     }
 
-    #[derive(Debug, PartialEq, Deserialize, AsRefStr)]
+    #[derive(Debug, Clone, Copy, PartialEq, Deserialize, AsRefStr)]
     pub enum EmfFunction {
         #[serde(rename = "DHW")]
         #[strum(serialize = "DHW")]
@@ -219,7 +219,7 @@ pub mod emf_devices {
         Cooling,
     }
 
-    #[derive(Debug, PartialEq, Deserialize)]
+    #[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
     pub enum EmfType {
         #[serde(rename = "BOILER")]
         Boiler,
@@ -249,6 +249,7 @@ pub mod emf_report_device {
     #[derive(Debug, Deserialize)]
     pub struct Dataset {
         pub key: Timestamp,
+        #[serde(with = "default_for_null")]
         pub value: f64,
     }
 }
@@ -298,12 +299,24 @@ mod timestamp_seconds_milli_or_not {
     }
 }
 
+mod default_for_null {
+    use serde::de::{Deserialize, Deserializer};
+
+    pub fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+    where
+        D: Deserializer<'de>,
+        T: Deserialize<'de> + Default,
+    {
+        Ok(Option::<T>::deserialize(deserializer)?.unwrap_or_default())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use chrono::{DateTime, Local};
     use serde::Deserialize;
 
-    use super::{meta::Rel, meta::State, timestamp_seconds_milli_or_not};
+    use super::{default_for_null, meta::Rel, meta::State, timestamp_seconds_milli_or_not};
 
     #[derive(Debug, Deserialize)]
     struct TestStructTS {
@@ -368,5 +381,21 @@ mod tests {
         let result: Result<TestStructRel, serde_json::Error> =
             serde_json::from_str(r#"{"rel": "_Self"}"#);
         assert!(result.is_err());
+    }
+
+    #[derive(Debug, Deserialize)]
+    struct F64Null {
+        #[serde(with = "default_for_null")]
+        pub value: f64,
+    }
+
+    #[test]
+    fn f64_null() {
+        let result: Result<F64Null, serde_json::Error> = serde_json::from_str(r#"{"value": null}"#);
+        assert_eq!(0.0, result.unwrap().value);
+
+        let result: Result<F64Null, serde_json::Error> =
+            serde_json::from_str(r#"{"value": 5000.0}"#);
+        assert_eq!(5000.0, result.unwrap().value);
     }
 }

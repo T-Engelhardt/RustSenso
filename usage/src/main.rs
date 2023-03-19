@@ -6,7 +6,9 @@ use env_logger::Env;
 use log::{error, info};
 use senso::{
     connector::Connector,
+    response::emf_devices::{EmfFunction, EmfType},
     urls::UrlBase,
+    yp::UsageFunction,
 };
 
 // THIS PART IS THE SAME AS SENSOR
@@ -69,6 +71,19 @@ fn main() {
         return;
     }
     // END SAME AS
+    // devices from emf_devices
+    let devices = vec![
+        (
+            EmfType::HeatPump,
+            "NoneGateway-LL_HMU03_0351_HP_Platform_Outdoor_Monobloc_PR_EBUS",
+        ),
+        (
+            EmfType::Boiler,
+            "NoneGateway-LL_VWZ02_0351_HP_Platform_Indoor_Monobloc_PR_EBUS",
+        ),
+    ];
+    let mut usage_ch = UsageFunction::new(EmfFunction::CentralHeating, &devices, 2023, 7);
+    usage_ch.retrieve_data(&c).unwrap();
 
-    todo!("");
+    println!("{:#?}", usage_ch);
 }

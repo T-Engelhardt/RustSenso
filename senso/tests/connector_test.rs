@@ -1,6 +1,10 @@
 use iso8601_timestamp::Timestamp;
-use mockito::Server;
-use senso::request::emf;
+use mockito::{Matcher, Server};
+use senso::{
+    request::emf,
+    response::emf_devices::{EmfFunction, EmfType},
+    yp::UsageFunction,
+};
 use serde_json::json;
 use std::{env, sync::Once};
 
@@ -186,6 +190,9 @@ fn emf_report_device_test() {
             .unwrap()
             .value
     );
+
+    // this is in UTC+0
+    // python used to be local time
     assert_eq!(
         1677456000,
         emf_report_device
@@ -285,4 +292,41 @@ fn insert_test() {
     assert_eq!(data_eq, data_db);
 
     live_report_mock.assert();
+}
+
+#[test]
+fn yp() {
+    let server = init();
+    let c = senso::connector::Connector::new(
+        senso::urls::UrlBase::Localhost(8080),
+        "1".into(),
+        "".into(),
+    );
+
+    let emf_report_device_mock = server
+        .mock("GET", "/facilities/1/emf/v1/devices/hp")
+        .with_body_from_file("tests/responses/emf_report_device.json")
+        .match_query(Matcher::AllOf(vec![
+            // same for every request
+            Matcher::AllOf(vec![
+                Matcher::UrlEncoded("timeRange".into(), "WEEK".into()),
+                Matcher::UrlEncoded("start".into(), "2023-02-27".into()),
+                Matcher::UrlEncoded("function".into(), "CENTRAL_HEATING".into()),
+                Matcher::UrlEncoded("offset".into(), "0".into()),
+            ]),
+            // for the first request power for the second yield
+            Matcher::AnyOf(vec![
+                Matcher::UrlEncoded("energyType".into(), "CONSUMED_ELECTRICAL_POWER".into()),
+                Matcher::UrlEncoded("energyType".into(), "ENVIRONMENTAL_YIELD".into()),
+            ]),
+        ]))
+        .create();
+
+    let devices = vec![(EmfType::HeatPump, "hp")];
+    let mut usage_ch = UsageFunction::new(EmfFunction::CentralHeating, &devices, 2023, 9);
+    usage_ch.retrieve_data(&c).unwrap();
+
+    println!("{:#?}", usage_ch);
+
+    emf_report_device_mock.expect(2).assert()
 }

@@ -1,5 +1,5 @@
 pub mod emf {
-    use chrono::{DateTime, Local};
+    use chrono::NaiveDateTime;
     use strum_macros::AsRefStr;
 
     use crate::response::emf_devices::{EmfFunction, EnergyType};
@@ -22,11 +22,12 @@ pub mod emf {
     impl Query {
         /// offset defaults to 0 on None
         /// energy_type and function is emitted if None
+        /// start uses UTC
         pub fn new(
             energy_type: EnergyType,
             function: EmfFunction,
             time_range: TimeRange,
-            start: DateTime<Local>,
+            start: NaiveDateTime,
             offset: Option<String>,
         ) -> Self {
             Self {
@@ -86,7 +87,7 @@ pub mod emf {
 
 #[cfg(test)]
 mod tests {
-    use chrono::Local;
+    use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 
     use crate::response::emf_devices::{EmfFunction, EnergyType};
 
@@ -98,12 +99,26 @@ mod tests {
             EnergyType::ConsumedElectricalPower,
             EmfFunction::CentralHeating,
             TimeRange::Week,
-            Local::now(),
+            NaiveDateTime::new(
+                NaiveDate::from_isoywd_opt(2023, 9, chrono::Weekday::Mon).unwrap(),
+                NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
+            ),
             None,
         );
 
         for p in x.into_iter() {
             println!("{:?}", p);
         }
+
+        let mut iter = x.into_iter();
+        assert_eq!(("timeRange", "WEEK"), iter.next().unwrap());
+        assert_eq!(("start", "2023-02-27"), iter.next().unwrap());
+        assert_eq!(
+            ("energyType", "CONSUMED_ELECTRICAL_POWER"),
+            iter.next().unwrap()
+        );
+        assert_eq!(("function", "CENTRAL_HEATING"), iter.next().unwrap());
+        assert_eq!(("offset", "0"), iter.next().unwrap());
+        assert!(iter.next().is_none());
     }
 }
