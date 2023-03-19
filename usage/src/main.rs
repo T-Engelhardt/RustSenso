@@ -21,6 +21,7 @@ pub const VERSION_STR: &str =
     formatcp!("v{}, senso v{}", env!("CARGO_PKG_VERSION"), senso::VERSION);
 
 /// Insert vaillant api usage data from a facility into a sqlite database.
+/// Prints to stdout if no db_file is set.
 #[derive(Parser)]
 #[command(version = VERSION_STR, about, long_about = None)]
 struct Args {
@@ -30,8 +31,8 @@ struct Args {
 
     /// Path of the Sqlite file.
     /// Creates a new file if not found.
-    #[arg(short, long, default_value = "./data.db")]
-    db_file: String,
+    #[arg(short, long)]
+    db_file: Option<String>,
 
     /// User name for login.
     #[arg(long)]
@@ -46,10 +47,6 @@ struct Args {
     #[arg(short, long, default_value = "./token")]
     token_file: String,
 
-    /// print cli_table in stdout
-    #[arg(short, long, default_value_t = true)]
-    cli_table: bool,
-
     /// how many days back from today in UTC.
     /// 1 => yesterday
     #[arg(long, default_value_t = 1)]
@@ -60,7 +57,7 @@ impl fmt::Display for Args {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "serial: {}\ndb_path: {}\ntoken_path: {}\nuser: {}\npwd: ###",
+            "serial: {}\ndb_path: {:#?}\ntoken_path: {}\nuser: {}\npwd: ###",
             self.serial, self.db_file, self.token_file, self.user
         )
     }
@@ -125,22 +122,21 @@ fn main() {
     if let Ok(result) =
         yp::build_yp_data_vec(usage_dhw, usage_ch).map_err(|e| error!("{}", e.to_string()))
     {
-        if args.cli_table {
-            print_stdout(result.with_title()).unwrap();
-        } else {
-            info!("Got YP Data");
-        }
-
-        if let Ok(db) = DB::new(Some(&args.db_file)).map_err(|e| error!("{}", e.to_string())) {
-            if db
-                .insert_yp_data(&result[day as usize])
-                .map_err(|e| error!("{}", e.to_string()))
-                .is_err()
-            {
-                error!("Could no insert yp data in database.")
+        if let Some(db_file) = &args.db_file {
+            if let Ok(db) = DB::new(Some(db_file)).map_err(|e| error!("{}", e.to_string())) {
+                if db
+                    .insert_yp_data(&result[day as usize])
+                    .map_err(|e| error!("{}", e.to_string()))
+                    .is_err()
+                {
+                    error!("Could no insert yp data in database.")
+                }
+            } else {
+                error!("Failed to open database.")
             }
         } else {
-            error!("Failed to open database.")
+            // no db file was given, print to stdout
+            let _ = print_stdout(result.with_title());
         }
     } else {
         error!("Failed to create yp data.");
