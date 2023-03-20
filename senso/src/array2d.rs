@@ -1,7 +1,7 @@
 use anyhow::Result;
 use thiserror::Error;
 
-#[derive(Error, Debug, PartialEq, Eq)]
+#[derive(Error, Debug)]
 pub enum Array2DError {
     #[error("Data has not the same Row Length")]
     RowLenMismatch,
@@ -13,7 +13,7 @@ pub enum Array2DError {
 ///
 /// Uses self::get_vec() to iterate over rows.
 #[derive(Debug)]
-struct Array2D<T> {
+pub struct Array2D<T> {
     row_max: usize,
     col_max: usize,
     data: Vec<T>,
@@ -57,7 +57,7 @@ impl<T> Array2D<T> {
 #[macro_export]
 macro_rules! count {
     () => (0usize);
-    ( $x:tt $($xs:tt)* ) => (1usize + count!($($xs)*));
+    ( $x:tt $($xs:tt)* ) => (1usize + $crate::count!($($xs)*));
 }
 
 #[macro_export]
@@ -68,7 +68,7 @@ macro_rules! array2d {
             // https://stackoverflow.com/a/69515645
             // use closure to return Result
             (|| {
-                let mut result = Array2D::new($first.len(), 1usize);
+                let mut result = $crate::array2d::Array2D::new($first.len(), 1usize);
                 match result.insert_row($first) {
                     Ok(_) => (),
                     Err(e) => return Err(e),
@@ -84,7 +84,7 @@ macro_rules! array2d {
             // https://stackoverflow.com/a/69515645
             // use closure to return Result
             (|| {
-                let mut result = Array2D::new($first.len(), count!($($x)*) + 1usize);
+                let mut result = $crate::array2d::Array2D::new($first.len(),  $crate::count!($($x)*) + 1usize);
                 match result.insert_row($first) {
                     Ok(_) => (),
                     Err(e) => return Err(e),
@@ -142,8 +142,6 @@ impl<'a, T> Iterator for Iter<'a, T> {
 #[cfg(test)]
 mod tests {
     use crate::array2d::Array2DError;
-
-    use super::Array2D;
 
     #[test]
     fn array2d_test() {

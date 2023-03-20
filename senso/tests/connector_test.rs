@@ -1,4 +1,4 @@
-use cli_table::{print_stdout, WithTitle};
+use chrono::{NaiveDate, NaiveDateTime};
 use iso8601_timestamp::Timestamp;
 use mockito::{Matcher, Mock, Server};
 use senso::{
@@ -311,7 +311,10 @@ fn yp() {
         Matcher::UrlEncoded("offset".into(), "0".into()),
     ]);
 
-    // data from db id 19..=25
+    // data from db id 19..=25, Week starting at the 13.02.2023 / 1676246400
+    // json data in tests/responses/emf_report/
+    // dates in json data don't match the with id 19..=25
+    //
     // ch_yp: 4.1667, 4, 3.5, 4, 5, 5, 4
     // hw_yp: 3, 3, 3.3333, 3.25, 4, 3.5, 2.75
     // total_y: 25000, 25000, 27000, 27000, 2200, 2200, 25000
@@ -397,14 +400,36 @@ fn yp() {
 
     let result = build_yp_data_vec(usage_dhw, usage_ch).unwrap();
 
-    // println!("{:#?}", result);
-    print_stdout(result.with_title()).unwrap();
+    // check yp
+    let ch_yp_vec: Vec<f64> = result.iter().map(|f| f.ch_yp).collect();
+    assert_eq!(vec![4.1667, 4.0, 3.5, 4.0, 5.0, 5.0, 4.0], ch_yp_vec);
+    let hw_yp_vec: Vec<f64> = result.iter().map(|f| f.hw_yp).collect();
+    assert_eq!(vec![3.0, 3.0, 3.3333, 3.25, 4.0, 3.5, 2.75], hw_yp_vec);
+    let total_yp_vec: Vec<f64> = result.iter().map(|f| f.total_yp).collect();
+    assert_eq!(
+        vec![3.7778, 3.7778, 3.4545, 3.7, 4.6667, 4.1429, 3.5],
+        total_yp_vec
+    );
 
+    // check ts
+    let ts: Vec<NaiveDateTime> = result.iter().map(|f| f.ts).collect();
+    let ts_eq: Vec<NaiveDateTime> = (0..7_u8)
+        .map(|day| {
+            NaiveDate::from_isoywd_opt(2023, 9, unsafe { std::mem::transmute(day) })
+                .unwrap()
+                .and_hms_opt(0, 0, 0)
+                .unwrap()
+        })
+        .collect();
+    assert_eq!(ts_eq, ts);
+
+    // create in memory db
     let db = DB::new(None).unwrap();
 
-    // insert and retrieve from DB
+    // insert into DB
     db.insert_yp_data(&result[0]).unwrap();
 
+    // assert every mock
     for x in mocks {
         x.assert();
     }

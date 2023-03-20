@@ -1,4 +1,5 @@
 use crate::{
+    array2d,
     connector::Connector,
     request::emf::{Query, TimeRange},
     response::{
@@ -6,10 +7,10 @@ use crate::{
         emf_report_device,
     },
 };
-use anyhow::{anyhow, bail};
-use array2d::Array2D;
+use anyhow::anyhow;
 use chrono::{NaiveDate, NaiveDateTime};
 use cli_table::Table;
+use itertools::Itertools;
 
 /// data for central heating and hotwater with total
 #[derive(Debug, Table)]
@@ -26,39 +27,6 @@ pub struct YpData {
     pub total_y: f64,
     pub total_p: f64,
     pub total_yp: f64,
-}
-
-impl YpData {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        ts: NaiveDateTime,
-        ch_hp_y: f64,
-        ch_hp_p: f64,
-        ch_bo_p: f64,
-        ch_yp: f64,
-        hw_hp_y: f64,
-        hw_hp_p: f64,
-        hw_bo_p: f64,
-        hw_yp: f64,
-        total_y: f64,
-        total_p: f64,
-        total_yp: f64,
-    ) -> Self {
-        Self {
-            ts,
-            ch_hp_y,
-            ch_hp_p,
-            ch_bo_p,
-            ch_yp,
-            hw_hp_y,
-            hw_hp_p,
-            hw_bo_p,
-            hw_yp,
-            total_y,
-            total_p,
-            total_yp,
-        }
-    }
 }
 
 pub fn calc_yp(y: f64, p: f64) -> f64 {
@@ -159,7 +127,7 @@ pub fn build_yp_data_vec(
 
     // create matrix from all the vecs
     // order important for result
-    let vec2d: Vec<Vec<f64>> = vec![
+    let array2d = array2d![
         ch_hp_y_vec,
         ch_hp_p_vec,
         ch_bo_p_vec,
@@ -170,16 +138,8 @@ pub fn build_yp_data_vec(
         hw_yp_vec,
         total_y,
         total_p,
-        total_yp,
-    ];
-
-    let matrix = match Array2D::from_rows(&vec2d) {
-        Ok(m) => m,
-        Err(_) => bail!("Can't create Array2D from vec2d"),
-    };
-
-    // create 2d vec but over columns
-    let matrix = matrix.as_columns();
+        total_yp
+    ]?;
 
     // create timestamp
     // TODO check if correct
@@ -195,25 +155,47 @@ pub fn build_yp_data_vec(
         );
     }
 
-    let mut result: Vec<YpData> = Vec::with_capacity(7);
+    let result = array2d
+        // iter over colums
+        .into_iter()
+        // create tuple of yp data, order set in array2d
+        .tuples::<(_, _, _, _, _, _, _, _, _, _, _)>()
+        // add timestamp
+        .zip(timestamps.iter())
+        // create yp data struct
+        .map(
+            |(
+                (
+                    ch_hp_y,
+                    ch_hp_p,
+                    ch_bo_p,
+                    ch_yp,
+                    hw_hp_y,
+                    hw_hp_p,
+                    hw_bo_p,
+                    hw_yp,
+                    total_y,
+                    total_p,
+                    total_yp,
+                ),
+                ts,
+            )| YpData {
+                ts: *ts,
+                ch_hp_y: *ch_hp_y,
+                ch_hp_p: *ch_hp_p,
+                ch_bo_p: *ch_bo_p,
+                ch_yp: *ch_yp,
+                hw_hp_y: *hw_hp_y,
+                hw_hp_p: *hw_hp_p,
+                hw_bo_p: *hw_bo_p,
+                hw_yp: *hw_yp,
+                total_y: *total_y,
+                total_p: *total_p,
+                total_yp: *total_yp,
+            },
+        )
+        .collect();
 
-    // order from vec2d
-    for (i, data) in matrix.iter().enumerate() {
-        result.push(YpData::new(
-            timestamps[i],
-            data[0],
-            data[1],
-            data[2],
-            data[3],
-            data[4],
-            data[5],
-            data[6],
-            data[7],
-            data[8],
-            data[9],
-            data[10],
-        ))
-    }
     Ok(result)
 }
 
