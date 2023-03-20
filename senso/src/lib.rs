@@ -1,3 +1,4 @@
+pub mod array2d;
 pub mod connector;
 pub mod db;
 pub mod request;
