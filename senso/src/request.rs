@@ -106,10 +106,6 @@ mod tests {
             None,
         );
 
-        for p in x.into_iter() {
-            println!("{:?}", p);
-        }
-
         let mut iter = x.into_iter();
         assert_eq!(("timeRange", "WEEK"), iter.next().unwrap());
         assert_eq!(("start", "2023-02-27"), iter.next().unwrap());

@@ -11,6 +11,7 @@ use anyhow::anyhow;
 use chrono::{NaiveDate, NaiveDateTime};
 use cli_table::Table;
 use itertools::Itertools;
+use num_traits::cast::FromPrimitive;
 
 /// data for central heating and hotwater with total
 #[derive(Debug, Table)]
@@ -148,10 +149,14 @@ pub fn build_yp_data_vec(
     for day in 0..=6_u8 {
         // SAFTEY weekday enum is defined between 0 and 6
         timestamps.push(
-            NaiveDate::from_isoywd_opt(dhw.year, dhw.week_nr, unsafe { std::mem::transmute(day) })
-                .ok_or(anyhow!("out-of-range date and/or invalid week number"))?
-                .and_hms_opt(0, 0, 0)
-                .ok_or(anyhow!(""))?,
+            NaiveDate::from_isoywd_opt(
+                dhw.year,
+                dhw.week_nr,
+                chrono::Weekday::from_u8(day).ok_or(anyhow!("Can't convert u8 to Weekday"))?,
+            )
+            .ok_or(anyhow!("out-of-range date and/or invalid week number"))?
+            .and_hms_opt(0, 0, 0)
+            .ok_or(anyhow!(""))?,
         );
     }
 

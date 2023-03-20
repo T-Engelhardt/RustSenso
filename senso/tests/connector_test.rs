@@ -1,6 +1,7 @@
 use chrono::{NaiveDate, NaiveDateTime};
 use iso8601_timestamp::Timestamp;
-use mockito::{Matcher, Mock, Server};
+use mockito::{Matcher, Mock, Server, ServerGuard};
+use num_traits::cast::FromPrimitive;
 use senso::{
     db::DB,
     request::emf,
@@ -14,27 +15,36 @@ extern crate senso;
 
 static INIT: Once = Once::new();
 
-static mut SERVER_GLOBAL: Option<Server> = None;
+// init env_logger once
+fn init() {
+    INIT.call_once(|| {
+        // default senso=debug if RUST_LOG is not set
+        if env::var("RUST_LOG").is_err() {
+            env::set_var("RUST_LOG", "senso=debug")
+        }
+        let _ = env_logger::builder().is_test(true).try_init();
+    });
+}
 
-fn init() -> &'static mut Server {
-    unsafe {
-        INIT.call_once(|| {
-            // default senso=debug if RUST_LOG is not set
-            if env::var("RUST_LOG").is_err() {
-                env::set_var("RUST_LOG", "senso=debug")
-            }
-            let _ = env_logger::builder().is_test(true).try_init();
-            SERVER_GLOBAL = Some(mockito::Server::new_with_port(8080));
-        });
-        SERVER_GLOBAL.as_mut().unwrap()
-    }
+// returns port of mockito Server as usize
+// SAFTEY last value after : should always be the port
+// this should only be used for test functions
+fn port(server: &ServerGuard) -> usize {
+    server
+        .host_with_port()
+        .split(":")
+        .last()
+        .unwrap()
+        .parse()
+        .unwrap()
 }
 
 #[test]
 fn login_test() {
-    let server = init();
+    init();
+    let mut server = Server::new();
     let mut c = senso::connector::Connector::new(
-        senso::urls::UrlBase::Localhost(8080),
+        senso::urls::UrlBase::Localhost(port(&server)),
         "1".into(),
         "./token_test".into(),
     );
@@ -89,9 +99,10 @@ fn login_test() {
 
 #[test]
 fn status_test() {
-    let server = init();
+    init();
+    let mut server = Server::new();
     let c = senso::connector::Connector::new(
-        senso::urls::UrlBase::Localhost(8080),
+        senso::urls::UrlBase::Localhost(port(&server)),
         "1".into(),
         "".into(),
     );
@@ -139,9 +150,10 @@ fn status_test() {
 
 #[test]
 fn live_report_test() {
-    let server = init();
+    init();
+    let mut server = Server::new();
     let c = senso::connector::Connector::new(
-        senso::urls::UrlBase::Localhost(8080),
+        senso::urls::UrlBase::Localhost(port(&server)),
         "1".into(),
         "".into(),
     );
@@ -167,9 +179,10 @@ fn live_report_test() {
 
 #[test]
 fn emf_report_device_test() {
-    let server = init();
+    init();
+    let mut server = Server::new();
     let c = senso::connector::Connector::new(
-        senso::urls::UrlBase::Localhost(8080),
+        senso::urls::UrlBase::Localhost(port(&server)),
         "1".into(),
         "".into(),
     );
@@ -214,9 +227,10 @@ fn emf_report_device_test() {
 
 #[test]
 fn emf_devices() {
-    let server = init();
+    init();
+    let mut server = Server::new();
     let c = senso::connector::Connector::new(
-        senso::urls::UrlBase::Localhost(8080),
+        senso::urls::UrlBase::Localhost(port(&server)),
         "1".into(),
         "".into(),
     );
@@ -240,9 +254,10 @@ fn emf_devices() {
 fn insert_test() {
     use senso::db::DB;
 
-    let server = init();
+    init();
+    let mut server = Server::new();
     let c = senso::connector::Connector::new(
-        senso::urls::UrlBase::Localhost(8080),
+        senso::urls::UrlBase::Localhost(port(&server)),
         "2".into(),
         "".into(),
     );
@@ -297,10 +312,11 @@ fn insert_test() {
 }
 
 #[test]
-fn yp() {
-    let server = init();
+fn yp_test() {
+    init();
+    let mut server = Server::new();
     let c = senso::connector::Connector::new(
-        senso::urls::UrlBase::Localhost(8080),
+        senso::urls::UrlBase::Localhost(port(&server)),
         "1".into(),
         "".into(),
     );
@@ -415,7 +431,7 @@ fn yp() {
     let ts: Vec<NaiveDateTime> = result.iter().map(|f| f.ts).collect();
     let ts_eq: Vec<NaiveDateTime> = (0..7_u8)
         .map(|day| {
-            NaiveDate::from_isoywd_opt(2023, 9, unsafe { std::mem::transmute(day) })
+            NaiveDate::from_isoywd_opt(2023, 9, chrono::Weekday::from_u8(day).unwrap())
                 .unwrap()
                 .and_hms_opt(0, 0, 0)
                 .unwrap()
