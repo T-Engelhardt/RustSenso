@@ -212,16 +212,25 @@ impl<'a, T> Iterator for IterColumns<'a, T> {
                 + (self.array.row_max * (self.count % self.array.col_max));
             // increment count
             self.count += 1;
-            // return ref to T
-            Some(&self.array.data[i])
+            // make sure i is not out of bounds
+            if self.array.data.len() <= i {
+                None
+            } else {
+                // return ref to T
+                Some(&self.array.data[i])
+            }
         }
     }
 
     // improve collect
     // exakt size is known
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let bound = self.array.data.len() - self.count;
-        (bound, Some(bound))
+        if self.count >= self.array.data.len() {
+            (0, Some(0))
+        } else {
+            let bound = self.array.data.len() - self.count;
+            (bound, Some(bound))
+        }
     }
 }
 
@@ -265,8 +274,12 @@ impl<'a, T> Iterator for IterRows<'a, T> {
     // improve collect
     // exakt size is known
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let bound = self.array.data.len() - self.count;
-        (bound, Some(bound))
+        if self.count >= self.array.data.len() {
+            (0, Some(0))
+        } else {
+            let bound = self.array.data.len() - self.count;
+            (bound, Some(bound))
+        }
     }
 }
 
