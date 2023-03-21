@@ -9,7 +9,7 @@ use log::{error, info};
 use senso::{
     connector::Connector,
     db::DB,
-    response::emf_devices::{EmfFunction, EmfDevice},
+    response::emf_devices::{EmfDevice, EmfFunction},
     urls::UrlBase,
     yp::{self, UsageFunctionWeek},
 };

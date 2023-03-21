@@ -98,19 +98,19 @@ pub fn build_yp_data_vec(
 
     // # Total
     // yield
-    let total_y: Vec<f64> = ch_hp_y_vec
+    let total_y = ch_hp_y_vec
         .iter()
         .zip(hw_hp_y_vec.iter())
         .map(|(ch_hp_y, hw_hp_y)| ch_hp_y + hw_hp_y)
         .collect_vec();
     // power usage
-    let total_p: Vec<f64> = ch_p_vec
+    let total_p = ch_p_vec
         .iter()
         .zip(hw_p_vec.iter())
         .map(|(ch_p, hw_p)| ch_p + hw_p)
         .collect_vec();
     // yp
-    let total_yp: Vec<f64> = total_y
+    let total_yp = total_y
         .iter()
         .zip(total_p.iter())
         .map(|(y, p)| calc_yp(*y, *p))

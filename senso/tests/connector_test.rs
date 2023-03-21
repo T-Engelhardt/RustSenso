@@ -5,7 +5,7 @@ use num_traits::cast::FromPrimitive;
 use senso::{
     db::DB,
     request::emf,
-    response::emf_devices::{EmfFunction, EmfDevice},
+    response::emf_devices::{EmfDevice, EmfFunction},
     yp::{build_yp_data_vec, UsageFunctionWeek},
 };
 use serde_json::json;
