@@ -3,8 +3,8 @@ use crate::{
     connector::Connector,
     request::emf::{Query, TimeRange},
     response::{
-        emf_devices::{EmfFunction, EmfType, EnergyType},
-        emf_report_device,
+        emf_devices::{EmfDevice, EmfFunction, EnergyType},
+        emf_report_device::{self, Dataset},
     },
 };
 use anyhow::anyhow;
@@ -43,88 +43,84 @@ pub fn build_yp_data_vec(
     dhw: UsageFunctionWeek,
     ch: UsageFunctionWeek,
 ) -> anyhow::Result<Vec<YpData>> {
-    // get data for central heatings
-    // boiler and heat pump
-    let ch_hp_y_vec: Vec<f64> = ch
-        .get_dataset(EmfType::HeatPump, EnergyType::EnvironmentalYield)
-        .iter()
+    // # central heatings
+    // heat pump yield
+    let ch_hp_y_vec = ch
+        .get_dataset(EmfDevice::HeatPump, EnergyType::EnvironmentalYield)
         .map(|x| x.value)
-        .collect();
-    let ch_hp_p_vec: Vec<f64> = ch
-        .get_dataset(EmfType::HeatPump, EnergyType::ConsumedElectricalPower)
-        .iter()
+        .collect_vec();
+    // heat pump power usage
+    let ch_hp_p_vec = ch
+        .get_dataset(EmfDevice::HeatPump, EnergyType::ConsumedElectricalPower)
         .map(|x| x.value)
-        .collect();
-    let ch_bo_p_vec: Vec<f64> = ch
-        .get_dataset(EmfType::Boiler, EnergyType::ConsumedElectricalPower)
-        .iter()
+        .collect_vec();
+    // boiler power usage
+    let ch_bo_p_vec = ch
+        .get_dataset(EmfDevice::Boiler, EnergyType::ConsumedElectricalPower)
         .map(|x| x.value)
-        .collect();
+        .collect_vec();
 
-    // power usage of central heating
-    let ch_p_vec: Vec<f64> = ch_hp_p_vec
+    // total power usage of central heating
+    let ch_p_vec = ch_hp_p_vec
         .iter()
         .zip(ch_bo_p_vec.iter())
-        .map(|x| *x.0 + *x.1)
-        .collect();
+        .map(|x| x.0 + x.1)
+        .collect_vec();
     // yp of central heating
     let cp_yp_vec: Vec<f64> = ch_hp_y_vec
         .iter()
         .zip(ch_p_vec.iter())
         .map(|x| calc_yp(*x.0, *x.1))
-        .collect();
+        .collect_vec();
 
-    // get data for hot water
-    // boiler and heat pump
-    let hw_hp_y_vec: Vec<f64> = dhw
-        .get_dataset(EmfType::HeatPump, EnergyType::EnvironmentalYield)
-        .iter()
+    // # how water
+    // heat pump yield
+    let hw_hp_y_vec = dhw
+        .get_dataset(EmfDevice::HeatPump, EnergyType::EnvironmentalYield)
         .map(|x| x.value)
-        .collect();
-    let hw_hp_p_vec: Vec<f64> = dhw
-        .get_dataset(EmfType::HeatPump, EnergyType::ConsumedElectricalPower)
-        .iter()
+        .collect_vec();
+    // heat pump power usage
+    let hw_hp_p_vec = dhw
+        .get_dataset(EmfDevice::HeatPump, EnergyType::ConsumedElectricalPower)
         .map(|x| x.value)
-        .collect();
-    let hw_bo_p_vec: Vec<f64> = dhw
-        .get_dataset(EmfType::Boiler, EnergyType::ConsumedElectricalPower)
-        .iter()
+        .collect_vec();
+    // boiler power usage
+    let hw_bo_p_vec = dhw
+        .get_dataset(EmfDevice::Boiler, EnergyType::ConsumedElectricalPower)
         .map(|x| x.value)
-        .collect();
-
-    // power usage of how water
-    let hw_p_vec: Vec<f64> = hw_hp_p_vec
+        .collect_vec();
+    // total power usage of how water
+    let hw_p_vec = hw_hp_p_vec
         .iter()
         .zip(hw_bo_p_vec.iter())
         .map(|x| x.0 + x.1)
-        .collect();
+        .collect_vec();
     // yp of hot water
-    let hw_yp_vec: Vec<f64> = hw_hp_y_vec
+    let hw_yp_vec = hw_hp_y_vec
         .iter()
         .zip(hw_p_vec.iter())
         .map(|x| calc_yp(*x.0, *x.1))
-        .collect();
+        .collect_vec();
 
-    // total
+    // # Total
     // yield
-    // only from heatpump
     let total_y: Vec<f64> = ch_hp_y_vec
         .iter()
         .zip(hw_hp_y_vec.iter())
         .map(|x| x.0 + x.1)
-        .collect();
-    // power
+        .collect_vec();
+    // power usage
     let total_p: Vec<f64> = ch_p_vec
         .iter()
         .zip(hw_p_vec.iter())
         .map(|x| x.0 + x.1)
-        .collect();
+        .collect_vec();
     // yp
     let total_yp: Vec<f64> = total_y
         .iter()
         .zip(total_p.iter())
         .map(|x| calc_yp(*x.0, *x.1))
-        .collect();
+        .collect_vec();
 
     // create matrix from all the vecs
     // order important for result
@@ -205,33 +201,37 @@ pub fn build_yp_data_vec(
     Ok(result)
 }
 
+/// Power usage and yield for given funtion(HotWater, Heating) and devices(Heatpump, Boiler)
 #[derive(Debug)]
 pub struct UsageFunctionWeek<'a> {
     function: EmfFunction,
-    devices: &'a Vec<(EmfType, &'a str)>,
+    devices: &'a Vec<(EmfDevice, &'a str)>,
     year: i32,
     week_nr: u32,
-    data: Vec<(EmfType, EnergyType, emf_report_device::Root)>,
+    power_usage: Vec<(EmfDevice, emf_report_device::Root)>,
+    yield_vec: Vec<(EmfDevice, emf_report_device::Root)>,
 }
 
 impl<'a> UsageFunctionWeek<'a> {
     pub fn new(
         function: EmfFunction,
-        devices: &'a Vec<(EmfType, &'a str)>,
+        devices: &'a Vec<(EmfDevice, &'a str)>,
         year: i32,
         week_nr: u32,
     ) -> Self {
         Self {
             function,
             devices,
-            data: Vec::with_capacity(devices.len() * 2),
+            power_usage: Vec::with_capacity(devices.len()),
+            yield_vec: Vec::with_capacity(devices.len()),
             year,
             week_nr,
         }
     }
 
-    // CALLS API
-    // !! currently only one week is supported
+    /// Calls remote api for given connector.
+    ///
+    /// Retrieves data for power usage and yield for given devices and funktion
     pub fn retrieve_data(&mut self, conn: &Connector) -> anyhow::Result<()> {
         let start = NaiveDate::from_isoywd_opt(self.year, self.week_nr, chrono::Weekday::Mon)
             .ok_or(anyhow!("out-of-range date and/or invalid week number"))?
@@ -257,40 +257,40 @@ impl<'a> UsageFunctionWeek<'a> {
         // call api for every device
         for d in self.devices {
             let resp_power = conn.emf_report_device(d.1, &q_power)?;
-            self.data
-                .push((d.0, EnergyType::ConsumedElectricalPower, resp_power));
+            self.power_usage.push((d.0, resp_power));
 
             // Boiler has no yield
-            if d.0 != EmfType::Boiler {
+            if d.0 != EmfDevice::Boiler {
                 let resp_yield = conn.emf_report_device(d.1, &q_yield)?;
-                self.data
-                    .push((d.0, EnergyType::EnvironmentalYield, resp_yield));
+                self.yield_vec.push((d.0, resp_yield));
             }
         }
 
         Ok(())
     }
 
+    ///
     pub fn get_dataset(
         &self,
-        emf_type: EmfType,
+        emf_device: EmfDevice,
         energy_type: EnergyType,
-    ) -> Vec<&emf_report_device::Dataset> {
-        let t: &Vec<&emf_report_device::Dataset> = &self
-            .data
-            .iter()
-            .filter_map(|f| {
-                if f.0 == emf_type && f.1 == energy_type {
-                    // body should always includes one dataset
-                    Some(&f.2.body.first()?.dataset)
-                } else {
-                    None
-                }
-            })
-            .flatten()
-            .collect();
+    ) -> impl Iterator<Item = &Dataset> {
+        let dataset = match energy_type {
+            EnergyType::EnvironmentalYield => &self.yield_vec,
+            EnergyType::ConsumedElectricalPower => &self.power_usage,
+        };
 
-        t.to_owned()
+        let dataset = dataset
+            .iter()
+            // filter for given device and energy
+            .filter(move |f| f.0 == emf_device)
+            .filter_map(|f| {
+                let d = f.1.body.first()?;
+                Some(&d.dataset)
+            })
+            .flatten();
+
+        dataset
     }
 }
 

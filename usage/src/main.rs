@@ -9,7 +9,7 @@ use log::{error, info};
 use senso::{
     connector::Connector,
     db::DB,
-    response::emf_devices::{EmfFunction, EmfType},
+    response::emf_devices::{EmfFunction, EmfDevice},
     urls::UrlBase,
     yp::{self, UsageFunctionWeek},
 };
@@ -83,11 +83,11 @@ fn main() {
     // devices from emf_devices
     let devices = vec![
         (
-            EmfType::HeatPump,
+            EmfDevice::HeatPump,
             "NoneGateway-LL_HMU03_0351_HP_Platform_Outdoor_Monobloc_PR_EBUS",
         ),
         (
-            EmfType::Boiler,
+            EmfDevice::Boiler,
             "NoneGateway-LL_VWZ02_0351_HP_Platform_Indoor_Monobloc_PR_EBUS",
         ),
     ];

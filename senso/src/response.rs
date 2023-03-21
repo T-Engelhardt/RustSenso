@@ -182,7 +182,7 @@ pub mod emf_devices {
         pub marketing_name: String,
         pub reports: Vec<Report>,
         #[serde(rename = "type")]
-        pub type_field: EmfType,
+        pub type_field: EmfDevice,
     }
 
     #[derive(Debug, Deserialize)]
@@ -220,7 +220,7 @@ pub mod emf_devices {
     }
 
     #[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
-    pub enum EmfType {
+    pub enum EmfDevice {
         #[serde(rename = "BOILER")]
         Boiler,
         #[serde(rename = "HEAT_PUMP")]

@@ -5,7 +5,7 @@ use num_traits::cast::FromPrimitive;
 use senso::{
     db::DB,
     request::emf,
-    response::emf_devices::{EmfFunction, EmfType},
+    response::emf_devices::{EmfFunction, EmfDevice},
     yp::{build_yp_data_vec, UsageFunctionWeek},
 };
 use serde_json::json;
@@ -408,7 +408,7 @@ fn yp_test() {
         .create();
     mocks.push(m);
 
-    let devices = vec![(EmfType::HeatPump, "hp"), (EmfType::Boiler, "bo")];
+    let devices = vec![(EmfDevice::HeatPump, "hp"), (EmfDevice::Boiler, "bo")];
     let mut usage_ch = UsageFunctionWeek::new(EmfFunction::CentralHeating, &devices, 2023, 9);
     let mut usage_dhw = UsageFunctionWeek::new(EmfFunction::DomesticHotWater, &devices, 2023, 9);
     usage_ch.retrieve_data(&c).unwrap();
