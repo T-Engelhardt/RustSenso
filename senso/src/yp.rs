@@ -162,6 +162,7 @@ pub fn build_yp_data_vec(
 
     let result = array2d
         // iter over colums
+        .over_columns()
         .into_iter()
         // create tuple of yp data, order set in array2d
         .tuples::<(_, _, _, _, _, _, _, _, _, _, _)>()
