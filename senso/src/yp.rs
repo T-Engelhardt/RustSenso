@@ -61,16 +61,13 @@ pub fn build_yp_data_vec(
         .collect_vec();
 
     // total power usage of central heating
-    let ch_p_vec = ch_hp_p_vec
-        .iter()
-        .zip(ch_bo_p_vec.iter())
-        .map(|x| x.0 + x.1)
-        .collect_vec();
+    let ch_p_vec = ch.get_total(EnergyType::ConsumedElectricalPower)?;
     // yp of central heating
+    // yield is only generated from the heatpump
     let cp_yp_vec: Vec<f64> = ch_hp_y_vec
         .iter()
         .zip(ch_p_vec.iter())
-        .map(|x| calc_yp(*x.0, *x.1))
+        .map(|(ch_hp_y, ch_p)| calc_yp(*ch_hp_y, *ch_p))
         .collect_vec();
 
     // # how water
@@ -90,16 +87,13 @@ pub fn build_yp_data_vec(
         .map(|x| x.value)
         .collect_vec();
     // total power usage of how water
-    let hw_p_vec = hw_hp_p_vec
-        .iter()
-        .zip(hw_bo_p_vec.iter())
-        .map(|x| x.0 + x.1)
-        .collect_vec();
+    let hw_p_vec = dhw.get_total(EnergyType::ConsumedElectricalPower)?;
     // yp of hot water
+    // yield is only generated from the heatpump
     let hw_yp_vec = hw_hp_y_vec
         .iter()
         .zip(hw_p_vec.iter())
-        .map(|x| calc_yp(*x.0, *x.1))
+        .map(|(hw_hp_y, hw_p)| calc_yp(*hw_hp_y, *hw_p))
         .collect_vec();
 
     // # Total
@@ -107,19 +101,19 @@ pub fn build_yp_data_vec(
     let total_y: Vec<f64> = ch_hp_y_vec
         .iter()
         .zip(hw_hp_y_vec.iter())
-        .map(|x| x.0 + x.1)
+        .map(|(ch_hp_y, hw_hp_y)| ch_hp_y + hw_hp_y)
         .collect_vec();
     // power usage
     let total_p: Vec<f64> = ch_p_vec
         .iter()
         .zip(hw_p_vec.iter())
-        .map(|x| x.0 + x.1)
+        .map(|(ch_p, hw_p)| ch_p + hw_p)
         .collect_vec();
     // yp
     let total_yp: Vec<f64> = total_y
         .iter()
         .zip(total_p.iter())
-        .map(|x| calc_yp(*x.0, *x.1))
+        .map(|(y, p)| calc_yp(*y, *p))
         .collect_vec();
 
     // create matrix from all the vecs
@@ -255,14 +249,14 @@ impl<'a> UsageFunctionWeek<'a> {
         );
 
         // call api for every device
-        for d in self.devices {
-            let resp_power = conn.emf_report_device(d.1, &q_power)?;
-            self.power_usage.push((d.0, resp_power));
+        for (device, device_id) in self.devices {
+            let resp_power = conn.emf_report_device(device_id, &q_power)?;
+            self.power_usage.push((*device, resp_power));
 
             // Boiler has no yield
-            if d.0 != EmfDevice::Boiler {
-                let resp_yield = conn.emf_report_device(d.1, &q_yield)?;
-                self.yield_vec.push((d.0, resp_yield));
+            if *device != EmfDevice::Boiler {
+                let resp_yield = conn.emf_report_device(device_id, &q_yield)?;
+                self.yield_vec.push((*device, resp_yield));
             }
         }
 
@@ -291,6 +285,19 @@ impl<'a> UsageFunctionWeek<'a> {
             .flatten();
 
         dataset
+    }
+
+    /// Get total power/yield
+    pub fn get_total(&self, energy_type: EnergyType) -> anyhow::Result<Vec<f64>> {
+        let mut total: Vec<f64> = vec![0.0; 7];
+        for (device, _) in self.devices {
+            for (i, data) in self.get_dataset(*device, energy_type).enumerate() {
+                total[i] = total.get(i).ok_or(anyhow!(
+                    "Index of Result(get_total) is out of bound. Dataset is to long for 1 Week."
+                ))? + data.value;
+            }
+        }
+        Ok(total)
     }
 }
 

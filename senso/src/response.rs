@@ -196,7 +196,7 @@ pub mod emf_devices {
         pub to: Timestamp,
     }
 
-    #[derive(Debug, PartialEq, Deserialize, AsRefStr)]
+    #[derive(Debug, Clone, Copy, PartialEq, Deserialize, AsRefStr)]
     pub enum EnergyType {
         #[serde(rename = "ENVIRONMENTAL_YIELD")]
         #[strum(serialize = "ENVIRONMENTAL_YIELD")]
