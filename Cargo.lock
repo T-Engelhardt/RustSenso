@@ -1158,7 +1158,7 @@ dependencies = [
 
 [[package]]
 name = "sensor"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "clap",
  "const_format",
@@ -1534,7 +1534,7 @@ dependencies = [
 
 [[package]]
 name = "usage"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "chrono",
  "clap",

@@ -71,25 +71,24 @@ fn main() {
     }
     // END SAME AS
 
-    let status = c.system_status().map_err(|e| error!("{}", e.to_string()));
+    let status = c.system_status().map_err(|e| error!("Failed to retrieve status from api. Response: \"{}\". Continuing anyway, use None as result.", e.to_string()));
     debug!("{:#?}", status);
 
-    let live_report = c.live_report().map_err(|e| error!("{}", e.to_string()));
+    let live_report = c.live_report().map_err(|e| error!("Failed to retrieve live report from api. Response: \"{}\". Continuing anyway, use None as result.", e.to_string()));
     debug!("{:#?}", live_report);
 
     let data = SensorData::new(&status, &live_report);
 
     info!("Got Sensor Data: {:#?}", &data);
 
-    if let Ok(db) = DB::new(Some(&args.db_file)).map_err(|e| error!("{}", e.to_string())) {
-        if db
-            .insert_sensor_data(data)
-            .map_err(|e| error!("{}", e.to_string()))
-            .is_err()
-        {
-            error!("Could no insert sensor data in database.")
-        }
-    } else {
-        error!("Failed to open database.")
+    if let Ok(db) = DB::new(Some(&args.db_file))
+        .map_err(|e| error!("Failed to open database because \"{}\".", e.to_string()))
+    {
+        let _ = db.insert_sensor_data(data).map_err(|e| {
+            error!(
+                "Could no insert sensor data in database becuse \"{}\".",
+                e.to_string()
+            )
+        });
     }
 }

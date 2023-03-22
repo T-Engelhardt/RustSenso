@@ -104,41 +104,51 @@ fn main() {
 
     if usage_ch
         .retrieve_data(&c)
-        .map_err(|e| error!("{}", e.to_string()))
+        .map_err(|e| {
+            error!(
+                "Failed to retrieve data for central heating. Response: \"{}\".",
+                e.to_string()
+            )
+        })
         .is_err()
     {
-        error!("Failed to retrieve data for central heating");
+        error!("Exiting");
         return;
     }
     if usage_dhw
         .retrieve_data(&c)
-        .map_err(|e| error!("{}", e.to_string()))
+        .map_err(|e| {
+            error!(
+                "Failed to retrieve data for domestic hot water. Response: \"{}\".",
+                e.to_string()
+            )
+        })
         .is_err()
     {
-        error!("Failed to retrieve data for domestic hot water");
+        error!("Exiting");
         return;
     }
 
-    if let Ok(result) =
-        yp::build_yp_data_vec(usage_dhw, usage_ch).map_err(|e| error!("{}", e.to_string()))
-    {
+    if let Ok(result) = yp::build_yp_data_vec(usage_dhw, usage_ch).map_err(|e| {
+        error!(
+            "Failed to create yp data to insert into db. Error: \"{}\".",
+            e.to_string()
+        )
+    }) {
         if let Some(db_file) = &args.db_file {
-            if let Ok(db) = DB::new(Some(db_file)).map_err(|e| error!("{}", e.to_string())) {
-                if db
-                    .insert_yp_data(&result[day as usize])
-                    .map_err(|e| error!("{}", e.to_string()))
-                    .is_err()
-                {
-                    error!("Could no insert yp data in database.")
-                }
-            } else {
-                error!("Failed to open database.")
+            if let Ok(db) = DB::new(Some(db_file))
+                .map_err(|e| error!("Failed to open database because \"{}\".", e.to_string()))
+            {
+                let _ = db.insert_yp_data(&result[day as usize]).map_err(|e| {
+                    error!(
+                        "Could no insert yp data in database because \"{}\".",
+                        e.to_string()
+                    )
+                });
             }
         } else {
             // no db file was given, print to stdout
             let _ = print_stdout(result.with_title());
         }
-    } else {
-        error!("Failed to create yp data.");
     }
 }

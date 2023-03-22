@@ -141,7 +141,7 @@ impl Connector {
                             bail!(ApiError::TokenOutdated)
                         }
                         _ => bail!(
-                            "Can't authenticate with current token. Response \"{}\".",
+                            "Can't authenticate with current token. Response: \"{}\".",
                             resp.into_string()?
                         ),
                     }
